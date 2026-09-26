@@ -12,7 +12,7 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-def init_db():
+def init_db(force_reseed=False):
     conn = get_db()
     cursor = conn.cursor()
     
@@ -134,17 +134,26 @@ def init_db():
     
     conn.commit()
     
-    # Seed Initial Data matching Excalidraw Wireframe if empty
-    cursor.execute("SELECT COUNT(*) FROM users")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO users (login_id, email, password, full_name) VALUES ('admin_odoo', 'admin@stocksense.com', 'Admin@123', 'Odoo Administrator')")
-        cursor.execute("INSERT INTO users (login_id, email, password, full_name) VALUES ('john_doe', 'john@stocksense.com', 'User@1234', 'John Doe')")
-        
-        cursor.execute("INSERT INTO warehouses (name, short_code, address) VALUES ('Main Warehouse', 'WH', 'Plot 42, Central Logistics Park, Industrial Zone')")
-        cursor.execute("INSERT INTO locations (name, short_code, warehouse_code) VALUES ('Stock Shelf 1', 'WH/Stock1', 'WH')")
-        cursor.execute("INSERT INTO locations (name, short_code, warehouse_code) VALUES ('Stock Shelf 2', 'WH/Stock2', 'WH')")
-        cursor.execute("INSERT INTO locations (name, short_code, warehouse_code) VALUES ('Vendor Inward Dock', 'Vendor', 'WH')")
-        cursor.execute("INSERT INTO locations (name, short_code, warehouse_code) VALUES ('Customer Dispatch Dock', 'Customer', 'WH')")
+    # Seed Initial Data matching Excalidraw Wireframe if empty or force_reseed
+    if force_reseed:
+        cursor.execute("DELETE FROM receipt_items")
+        cursor.execute("DELETE FROM receipts")
+        cursor.execute("DELETE FROM delivery_items")
+        cursor.execute("DELETE FROM deliveries")
+        cursor.execute("DELETE FROM products")
+        cursor.execute("DELETE FROM move_history")
+
+    cursor.execute("SELECT COUNT(*) FROM products")
+    if force_reseed or cursor.fetchone()[0] == 0:
+        cursor.execute("SELECT COUNT(*) FROM users")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("INSERT INTO users (login_id, email, password, full_name) VALUES ('admin_odoo', 'admin@stocksense.com', 'Admin@123', 'Odoo Administrator')")
+            cursor.execute("INSERT INTO users (login_id, email, password, full_name) VALUES ('john_doe', 'john@stocksense.com', 'User@1234', 'John Doe')")
+            cursor.execute("INSERT INTO warehouses (name, short_code, address) VALUES ('Main Warehouse', 'WH', 'Plot 42, Central Logistics Park, Industrial Zone')")
+            cursor.execute("INSERT INTO locations (name, short_code, warehouse_code) VALUES ('Stock Shelf 1', 'WH/Stock1', 'WH')")
+            cursor.execute("INSERT INTO locations (name, short_code, warehouse_code) VALUES ('Stock Shelf 2', 'WH/Stock2', 'WH')")
+            cursor.execute("INSERT INTO locations (name, short_code, warehouse_code) VALUES ('Vendor Inward Dock', 'Vendor', 'WH')")
+            cursor.execute("INSERT INTO locations (name, short_code, warehouse_code) VALUES ('Customer Dispatch Dock', 'Customer', 'WH')")
         
         # Products from wireframe
         cursor.execute("INSERT INTO products (code, name, unit_cost, on_hand, free_to_use) VALUES ('DESK001', 'Desk', 3000, 50, 45)")
@@ -737,6 +746,12 @@ def create_internal_transfer():
     conn.commit()
     conn.close()
     return jsonify({"success": True, "reference": ref, "message": "Transfer logged successfully"})
+
+# --- Demo Data Reset for Live Presentation ---
+@app.route("/api/admin/reset-demo", methods=["POST"])
+def reset_demo_data_endpoint():
+    init_db(force_reseed=True)
+    return jsonify({"success": True, "message": "Demo data successfully reset to initial hackathon state!"})
 
 if __name__ == "__main__":
     print("[INFO] StockSense Odoo Inventory Server running on http://127.0.0.1:5000")

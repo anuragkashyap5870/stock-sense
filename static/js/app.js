@@ -1165,3 +1165,19 @@ document.addEventListener("click", (e) => {
     e.target.classList.add("hidden");
   }
 });
+
+// Demo Data Reset Helper for Presentation
+async function resetDemoData() {
+  if (!confirm("Are you sure you want to reset all demo data back to the clean initial state for presentation?")) return;
+  try {
+    const res = await fetch("/api/admin/reset-demo", { method: "POST" });
+    const data = await res.json();
+    if (data.success) {
+      alert("✅ " + data.message);
+      window.location.reload();
+    }
+  } catch (err) {
+    alert("Error resetting demo data");
+  }
+}
+
