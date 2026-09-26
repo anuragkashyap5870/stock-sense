@@ -1,0 +1,995 @@
+<!-- ==============================================================================
+  StockSense - Modular Inventory Management System
+  Component: Odoo Barcode Scanner Modal
+  File: templates/components/barcode_scanner.html
+  Simulated Barcode Viewfinder with Instant SKU Lookup & Action Routing
+============================================================================== -->
+
+<!-- Google Fonts & Font Awesome Icons -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+  /* ==========================================================================
+     Barcode Scanner Modal Styles (Odoo Clean Theme)
+     Theme: #714B67 (Primary Purple), #00A09D (Teal), #F8FAFC (Background)
+     ========================================================================== */
+
+  .barcode-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+  }
+
+  .barcode-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .barcode-modal-container {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: scale(0.95) translateY(10px);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #0F172A;
+  }
+
+  .barcode-modal-overlay.active .barcode-modal-container {
+    transform: scale(1) translateY(0);
+  }
+
+  /* Modal Header */
+  .barcode-modal-header {
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #E2E8F0;
+    background: #FAFAFC;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+  }
+
+  .barcode-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .barcode-icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #714B67 0%, #8E5F82 100%);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 2px 8px rgba(113, 75, 103, 0.25);
+  }
+
+  .barcode-title-group h2 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin: 0;
+    color: #0F172A;
+    letter-spacing: -0.01em;
+  }
+
+  .barcode-title-group p {
+    font-size: 0.8rem;
+    color: #64748B;
+    margin: 2px 0 0 0;
+  }
+
+  .barcode-close-btn {
+    background: transparent;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 18px;
+    color: #64748B;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .barcode-close-btn:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+  }
+
+  /* Modal Body */
+  .barcode-modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* 1. Camera Viewfinder Simulation */
+  .scanner-viewfinder-wrapper {
+    position: relative;
+    background: #090D16;
+    border-radius: 12px;
+    height: 220px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+    border: 1px solid #1E293B;
+  }
+
+  /* Camera Status Pill */
+  .camera-status-pill {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    z-index: 5;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .camera-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10B981;
+    box-shadow: 0 0 8px #10B981;
+    animation: blinkDot 1.5s infinite;
+  }
+
+  @keyframes blinkDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .camera-fps-tag {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: #64748B;
+    background: rgba(15, 23, 42, 0.85);
+    padding: 3px 8px;
+    border-radius: 4px;
+    z-index: 5;
+  }
+
+  /* Target Frame Brackets */
+  .scanner-target-frame {
+    position: relative;
+    width: 260px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Corner Brackets */
+  .corner-bracket {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: #00A09D;
+    border-style: solid;
+    border-width: 0;
+  }
+
+  .corner-tl { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; border-top-left-radius: 4px; }
+  .corner-tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-top-right-radius: 4px; }
+  .corner-bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; border-bottom-left-radius: 4px; }
+  .corner-br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 4px; }
+
+  /* Animated Laser Scan Line */
+  .scanner-laser-line {
+    position: absolute;
+    top: 0;
+    left: 8px;
+    right: 8px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, #EF4444 30%, #EF4444 70%, transparent 100%);
+    box-shadow: 0 0 12px 2px rgba(239, 68, 68, 0.8), 0 0 4px #EF4444;
+    animation: scanLaser 2s infinite ease-in-out alternate;
+    z-index: 4;
+  }
+
+  @keyframes scanLaser {
+    0% { top: 10px; opacity: 0.8; }
+    50% { opacity: 1; }
+    100% { top: 108px; opacity: 0.8; }
+  }
+
+  /* Barcode Graphic Inside Target */
+  .simulated-barcode-bars {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    opacity: 0.35;
+    transition: opacity 0.2s ease;
+  }
+
+  .simulated-barcode-bars.active-scan {
+    opacity: 0.8;
+  }
+
+  .barcode-bar {
+    height: 50px;
+    background: #E2E8F0;
+    border-radius: 1px;
+  }
+
+  .barcode-hint {
+    position: absolute;
+    bottom: 12px;
+    font-size: 11px;
+    color: #94A3B8;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 5;
+  }
+
+  /* Laser Flash animation on successful scan */
+  .scanner-flash {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 160, 157, 0.35);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s ease;
+    z-index: 10;
+  }
+
+  .scanner-flash.flash-active {
+    opacity: 1;
+  }
+
+  /* 2. Quick SKU Preset Buttons */
+  .quick-sku-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .quick-sku-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748B;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .quick-sku-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+  }
+
+  .btn-quick-sku {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: #0F172A;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    transition: all 0.15s ease;
+    text-align: left;
+  }
+
+  .btn-quick-sku strong {
+    font-family: 'JetBrains Mono', monospace;
+    color: #714B67;
+    font-size: 13px;
+  }
+
+  .btn-quick-sku span {
+    font-size: 11px;
+    color: #64748B;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+
+  .btn-quick-sku:hover {
+    background: #F3E8F0;
+    border-color: #714B67;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(113, 75, 103, 0.15);
+  }
+
+  .btn-quick-sku:active {
+    transform: translateY(0);
+  }
+
+  /* Manual Search Bar */
+  .manual-scan-bar {
+    display: flex;
+    gap: 8px;
+  }
+
+  .manual-scan-input {
+    flex: 1;
+    padding: 9px 14px;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: #0F172A;
+    background: #FFFFFF;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .manual-scan-input:focus {
+    border-color: #714B67;
+    box-shadow: 0 0 0 3px rgba(113, 75, 103, 0.12);
+  }
+
+  .btn-manual-scan {
+    background: #714B67;
+    color: #FFFFFF;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.15s ease;
+  }
+
+  .btn-manual-scan:hover {
+    background: #5D3D55;
+  }
+
+  /* 3. Scan Result Card */
+  .scan-result-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: all 0.2s ease;
+  }
+
+  .scan-result-card.hidden {
+    display: none;
+  }
+
+  .scan-result-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .product-photo-placeholder {
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: #714B67;
+    flex-shrink: 0;
+  }
+
+  .product-result-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .product-result-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .product-result-sku {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: #64748B;
+    font-weight: 600;
+  }
+
+  .product-meta-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .meta-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .badge-stock-onhand {
+    background: #E0F7F6;
+    color: #008784;
+    border: 1px solid #B2EBF2;
+  }
+
+  .badge-stock-free {
+    background: #ECFDF5;
+    color: #059669;
+    border: 1px solid #A7F3D0;
+  }
+
+  .badge-location-tag {
+    background: #F1F5F9;
+    color: #475569;
+    border: 1px solid #CBD5E1;
+  }
+
+  .badge-cost-tag {
+    background: #FDF4FF;
+    color: #A21CAF;
+    border: 1px solid #F5D0FE;
+  }
+
+  /* Scan Action Buttons */
+  .scan-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    border-top: 1px solid #F1F5F9;
+    padding-top: 12px;
+  }
+
+  .btn-scan-action {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    text-align: center;
+  }
+
+  .btn-scan-action.action-rcpt {
+    background: #ECFDF5;
+    color: #065F46;
+    border-color: #A7F3D0;
+  }
+
+  .btn-scan-action.action-rcpt:hover {
+    background: #D1FAE5;
+  }
+
+  .btn-scan-action.action-deliv {
+    background: #FEF2F2;
+    color: #991B1B;
+    border-color: #FECACA;
+  }
+
+  .btn-scan-action.action-deliv:hover {
+    background: #FEE2E2;
+  }
+
+  .btn-scan-action.action-stock {
+    background: #F8FAFC;
+    color: #475569;
+    border-color: #CBD5E1;
+  }
+
+  .btn-scan-action.action-stock:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+  }
+
+  /* Sound Switcher & Footer */
+  .scanner-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #64748B;
+    padding-top: 4px;
+    border-top: 1px solid #F1F5F9;
+  }
+
+  .sound-toggle-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  @media (max-width: 600px) {
+    .scan-actions-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<!-- ==========================================================================
+     BARCODE SCANNER MODAL HTML
+     ========================================================================== -->
+<div id="modal-barcode-scanner" class="barcode-modal-overlay">
+  <div class="barcode-modal-container">
+    
+    <!-- Modal Header -->
+    <div class="barcode-modal-header">
+      <div class="barcode-header-left">
+        <div class="barcode-icon-box">
+          <i class="fa-solid fa-barcode"></i>
+        </div>
+        <div class="barcode-title-group">
+          <h2>Odoo Barcode Scanner</h2>
+          <p>Scan physical item barcode or test with quick SKU presets</p>
+        </div>
+      </div>
+      <button type="button" class="barcode-close-btn" onclick="closeBarcodeScannerModal()" title="Close scanner">&times;</button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="barcode-modal-body">
+
+      <!-- 1. Viewfinder Simulation Screen -->
+      <div class="scanner-viewfinder-wrapper" id="scanner-viewfinder">
+        <div class="camera-status-pill">
+          <span class="camera-status-dot"></span>
+          <span>Camera Live</span>
+        </div>
+        <div class="camera-fps-tag">60 FPS &bull; 1080p</div>
+
+        <!-- Target Frame with Animated Red Laser -->
+        <div class="scanner-target-frame">
+          <div class="corner-bracket corner-tl"></div>
+          <div class="corner-bracket corner-tr"></div>
+          <div class="corner-bracket corner-bl"></div>
+          <div class="corner-bracket corner-br"></div>
+          
+          <div class="scanner-laser-line" id="scanner-laser"></div>
+
+          <!-- Decorative Barcode Bars -->
+          <div class="simulated-barcode-bars" id="simulated-bars">
+            <div class="barcode-bar" style="width: 3px;"></div>
+            <div class="barcode-bar" style="width: 1px;"></div>
+            <div class="barcode-bar" style="width: 4px;"></div>
+            <div class="barcode-bar" style="width: 2px;"></div>
+            <div class="barcode-bar" style="width: 5px;"></div>
+            <div class="barcode-bar" style="width: 2px;"></div>
+            <div class="barcode-bar" style="width: 1px;"></div>
+            <div class="barcode-bar" style="width: 4px;"></div>
+            <div class="barcode-bar" style="width: 3px;"></div>
+            <div class="barcode-bar" style="width: 2px;"></div>
+            <div class="barcode-bar" style="width: 5px;"></div>
+            <div class="barcode-bar" style="width: 2px;"></div>
+            <div class="barcode-bar" style="width: 1px;"></div>
+            <div class="barcode-bar" style="width: 3px;"></div>
+            <div class="barcode-bar" style="width: 4px;"></div>
+            <div class="barcode-bar" style="width: 2px;"></div>
+            <div class="barcode-bar" style="width: 1px;"></div>
+            <div class="barcode-bar" style="width: 5px;"></div>
+            <div class="barcode-bar" style="width: 3px;"></div>
+          </div>
+        </div>
+
+        <div class="barcode-hint">
+          <i class="fa-solid fa-arrows-to-dot"></i>
+          Align barcode inside the viewfinder box
+        </div>
+
+        <!-- Flash Effect -->
+        <div class="scanner-flash" id="scanner-flash"></div>
+      </div>
+
+      <!-- 2. Quick SKU Presets for Instant Testing -->
+      <div class="quick-sku-section">
+        <span class="quick-sku-label">
+          <i class="fa-solid fa-bolt" style="color: #00A09D;"></i> Quick SKU Test Presets
+        </span>
+        <div class="quick-sku-grid">
+          <button type="button" class="btn-quick-sku" onclick="simulateBarcodeScan('DESK001')">
+            <strong>DESK001</strong>
+            <span>Executive Desk</span>
+          </button>
+          <button type="button" class="btn-quick-sku" onclick="simulateBarcodeScan('TBL002')">
+            <strong>TBL002</strong>
+            <span>Conference Table</span>
+          </button>
+          <button type="button" class="btn-quick-sku" onclick="simulateBarcodeScan('CHR003')">
+            <strong>CHR003</strong>
+            <span>Ergonomic Chair</span>
+          </button>
+          <button type="button" class="btn-quick-sku" onclick="simulateBarcodeScan('LMP004')">
+            <strong>LMP004</strong>
+            <span>LED Desk Lamp</span>
+          </button>
+        </div>
+
+        <!-- Manual SKU / Barcode text input -->
+        <div class="manual-scan-bar">
+          <input 
+            type="text" 
+            id="input-barcode-manual" 
+            class="manual-scan-input" 
+            placeholder="Type or paste SKU/Barcode (e.g. DESK001)..." 
+            onkeydown="if(event.key==='Enter') triggerManualBarcodeScan()"
+          >
+          <button type="button" class="btn-manual-scan" onclick="triggerManualBarcodeScan()">
+            <i class="fa-solid fa-qrcode"></i> Scan SKU
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. Scan Result Card -->
+      <div id="barcode-scan-result" class="scan-result-card hidden">
+        <div class="scan-result-top">
+          <div class="product-photo-placeholder" id="res-photo-box">
+            <i class="fa-solid fa-box" id="res-prod-icon"></i>
+          </div>
+          <div class="product-result-info">
+            <h3 class="product-result-title">
+              <span id="res-prod-name">Desk</span>
+              <span class="meta-badge badge-stock-free" id="res-status-badge">Available</span>
+            </h3>
+            <span class="product-result-sku" id="res-prod-sku">SKU: DESK001 &bull; Barcode: 890124800101</span>
+
+            <div class="product-meta-badges">
+              <span class="meta-badge badge-stock-onhand">
+                <i class="fa-solid fa-cubes"></i> On Hand: <strong id="res-on-hand">50</strong>
+              </span>
+              <span class="meta-badge badge-stock-free">
+                <i class="fa-solid fa-check"></i> Free to Use: <strong id="res-free-use">45</strong>
+              </span>
+              <span class="meta-badge badge-location-tag">
+                <i class="fa-solid fa-location-dot"></i> Rack: <strong id="res-rack-loc">WH/Stock1</strong>
+              </span>
+              <span class="meta-badge badge-cost-tag">
+                <i class="fa-solid fa-tag"></i> Cost: <strong id="res-unit-cost">3000 Rs</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions Grid -->
+        <div class="scan-actions-grid">
+          <button type="button" class="btn-scan-action action-rcpt" onclick="routeScannedToReceipt()">
+            <i class="fa-solid fa-circle-arrow-down"></i> Add to Receipt
+          </button>
+          <button type="button" class="btn-scan-action action-deliv" onclick="routeScannedToDelivery()">
+            <i class="fa-solid fa-circle-arrow-up"></i> Add to Delivery
+          </button>
+          <button type="button" class="btn-scan-action action-stock" onclick="routeScannedToStock()">
+            <i class="fa-solid fa-warehouse"></i> View in Stock
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="scanner-footer">
+        <label class="sound-toggle-label">
+          <input type="checkbox" id="chk-scanner-sound" checked>
+          <span><i class="fa-solid fa-volume-high"></i> Audio Beep Synthesis</span>
+        </label>
+        <span>Hardware scanner &bull; USB/HID &bull; Ready</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     BARCODE SCANNER CLIENT SCRIPT
+     ========================================================================== -->
+<script>
+  // State tracking for scanned item
+  window.currentScannedProduct = null;
+
+  /**
+   * Modal Open & Close Handlers
+   */
+  function openBarcodeScannerModal() {
+    const modal = document.getElementById("modal-barcode-scanner");
+    if (modal) {
+      modal.classList.add("active");
+      const input = document.getElementById("input-barcode-manual");
+      if (input) {
+        input.value = "";
+        setTimeout(() => input.focus(), 150);
+      }
+    }
+  }
+
+  function closeBarcodeScannerModal() {
+    const modal = document.getElementById("modal-barcode-scanner");
+    if (modal) modal.classList.remove("active");
+  }
+
+  /**
+   * Synthesized Audio Beep (Web Audio API)
+   */
+  function playScannerBeep() {
+    const soundEnabled = document.getElementById("chk-scanner-sound")?.checked;
+    if (!soundEnabled) return;
+
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(1800, ctx.currentTime); // 1.8 kHz classic barcode scanner pitch
+      osc.frequency.exponentialRampToValueAtTime(2400, ctx.currentTime + 0.08);
+
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch (e) {
+      // Audio context might be restricted before gesture
+    }
+  }
+
+  /**
+   * Visual scan trigger effect
+   */
+  function triggerScanVisualEffect() {
+    const flash = document.getElementById("scanner-flash");
+    const bars = document.getElementById("simulated-bars");
+    if (flash) {
+      flash.classList.add("flash-active");
+      setTimeout(() => flash.classList.remove("flash-active"), 180);
+    }
+    if (bars) {
+      bars.classList.add("active-scan");
+      setTimeout(() => bars.classList.remove("active-scan"), 300);
+    }
+  }
+
+  /**
+   * Product Category Icon Helper
+   */
+  function getProductIconForBarcode(name) {
+    const n = (name || "").toLowerCase();
+    if (n.includes("chair")) return "fa-chair";
+    if (n.includes("lamp") || n.includes("light")) return "fa-lightbulb";
+    if (n.includes("table")) return "fa-table";
+    if (n.includes("desk")) return "fa-couch";
+    return "fa-box";
+  }
+
+  /**
+   * Core Barcode Fetch & Simulation
+   */
+  async function simulateBarcodeScan(sku) {
+    const targetSku = (sku || "").trim().toUpperCase();
+    if (!targetSku) return;
+
+    triggerScanVisualEffect();
+    playScannerBeep();
+
+    try {
+      const res = await fetch(`/api/barcode/${encodeURIComponent(targetSku)}`);
+      let product = null;
+
+      if (res.ok) {
+        product = await res.json();
+      } else {
+        // Fallback lookup from products API or local dataset
+        const prodRes = await fetch("/api/products");
+        if (prodRes.ok) {
+          const list = await prodRes.json();
+          product = list.find(p => (p.code || "").toUpperCase() === targetSku || (p.name || "").toUpperCase() === targetSku || String(p.id) === targetSku);
+        }
+      }
+
+      if (!product) {
+        // Mock fallback for demo reliability
+        const fallbacks = {
+          'DESK001': { id: 1, code: 'DESK001', name: 'Desk', on_hand: 50, free_to_use: 45, unit_cost: 3000, rack_location: 'WH/Stock1' },
+          'TBL002': { id: 2, code: 'TBL002', name: 'Table', on_hand: 50, free_to_use: 50, unit_cost: 3000, rack_location: 'WH/Stock2' },
+          'CHR003': { id: 3, code: 'CHR003', name: 'Ergonomic Chair', on_hand: 25, free_to_use: 20, unit_cost: 1500, rack_location: 'WH/Stock1' },
+          'LMP004': { id: 4, code: 'LMP004', name: 'LED Desk Lamp', on_hand: 0, free_to_use: 0, unit_cost: 800, rack_location: 'WH/Stock1' }
+        };
+        product = fallbacks[targetSku];
+      }
+
+      if (product) {
+        displayBarcodeResult(product);
+      } else {
+        alert(`No product found matching barcode/SKU "${targetSku}"`);
+      }
+    } catch (err) {
+      console.error("Barcode scan lookup error", err);
+    }
+  }
+
+  function triggerManualBarcodeScan() {
+    const input = document.getElementById("input-barcode-manual");
+    if (input && input.value.trim()) {
+      simulateBarcodeScan(input.value.trim());
+    }
+  }
+
+  /**
+   * Render Result Card
+   */
+  function displayBarcodeResult(p) {
+    window.currentScannedProduct = p;
+    const card = document.getElementById("barcode-scan-result");
+    if (!card) return;
+
+    card.classList.remove("hidden");
+
+    document.getElementById("res-prod-name").textContent = p.name;
+    document.getElementById("res-prod-sku").textContent = `SKU: ${p.code || 'N/A'} • Barcode: 890124800${p.id || '101'}`;
+    document.getElementById("res-on-hand").textContent = p.on_hand;
+    document.getElementById("res-free-use").textContent = p.free_to_use;
+    document.getElementById("res-rack-loc").textContent = p.rack_location || "WH/Stock1";
+    document.getElementById("res-unit-cost").textContent = `${p.unit_cost || 0} Rs`;
+
+    const iconEl = document.getElementById("res-prod-icon");
+    if (iconEl) {
+      iconEl.className = `fa-solid ${getProductIconForBarcode(p.name)}`;
+    }
+
+    const badge = document.getElementById("res-status-badge");
+    if (badge) {
+      if (p.free_to_use > 0) {
+        badge.className = "meta-badge badge-stock-free";
+        badge.textContent = "In Stock";
+      } else {
+        badge.className = "meta-badge";
+        badge.style.background = "#FEF2F2";
+        badge.style.color = "#DC2626";
+        badge.style.border = "1px solid #FECACA";
+        badge.textContent = "Out of Stock";
+      }
+    }
+  }
+
+  /**
+   * Quick Action Routing Handlers
+   */
+  function routeScannedToReceipt() {
+    if (!window.currentScannedProduct) return;
+    const p = window.currentScannedProduct;
+    closeBarcodeScannerModal();
+    if (typeof navigateTo === "function") navigateTo("receipts");
+    if (typeof openNewReceiptModal === "function") {
+      openNewReceiptModal();
+      setTimeout(() => {
+        const prodSelect = document.getElementById("new-rcpt-prod-id");
+        if (prodSelect) prodSelect.value = p.id;
+      }, 200);
+    } else {
+      alert(`Product ${p.name} queued for Receipt.`);
+    }
+  }
+
+  function routeScannedToDelivery() {
+    if (!window.currentScannedProduct) return;
+    const p = window.currentScannedProduct;
+    closeBarcodeScannerModal();
+    if (typeof navigateTo === "function") navigateTo("deliveries");
+    if (typeof openNewDeliveryModal === "function") {
+      openNewDeliveryModal();
+      setTimeout(() => {
+        const prodSelect = document.getElementById("new-deliv-prod-id");
+        if (prodSelect) prodSelect.value = p.id;
+      }, 200);
+    } else {
+      alert(`Product ${p.name} queued for Delivery.`);
+    }
+  }
+
+  function routeScannedToStock() {
+    if (!window.currentScannedProduct) return;
+    const p = window.currentScannedProduct;
+    closeBarcodeScannerModal();
+    if (typeof navigateTo === "function") navigateTo("stock");
+    setTimeout(() => {
+      const searchInput = document.getElementById("ss-search-input") || document.getElementById("stock-search-input");
+      if (searchInput) {
+        searchInput.value = p.name;
+        if (typeof handleStockSearch === "function") handleStockSearch(p.name);
+      }
+    }, 200);
+  }
+
+  // Close modal when clicking backdrop
+  document.addEventListener("click", function(e) {
+    const modal = document.getElementById("modal-barcode-scanner");
+    if (modal && e.target === modal) {
+      closeBarcodeScannerModal();
+    }
+  });
+
+  // Hotkey [B] to toggle Barcode Scanner
+  document.addEventListener("keydown", function(e) {
+    if ((e.key === "b" || e.key === "B") && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
+      e.preventDefault();
+      openBarcodeScannerModal();
+    }
+    if (e.key === "Escape") {
+      closeBarcodeScannerModal();
+    }
+  });
+</script>

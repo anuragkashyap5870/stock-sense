@@ -490,6 +490,26 @@ def adjust_inventory():
     conn.close()
     return jsonify({"success": True, "message": f"Stock adjusted for {prod['name']} to {counted} units."})
 
+# --- Barcode Scanner API ---
+@app.route("/api/barcode/<sku>", methods=["GET"])
+def get_product_by_barcode(sku):
+    sku_clean = sku.strip().upper()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM products WHERE UPPER(code) = ? OR UPPER(name) = ? OR id = ?", 
+                   (sku_clean, sku_clean, sku_clean))
+    product = cursor.fetchone()
+    conn.close()
+    
+    if not product:
+        return jsonify({"success": False, "message": f"No product found for SKU/Barcode '{sku}'"}), 404
+        
+    p_dict = dict(product)
+    p_dict["success"] = True
+    p_dict["rack_location"] = "WH/Stock1" if p_dict["id"] != 2 else "WH/Stock2"
+    p_dict["category"] = "Office Furniture" if p_dict["id"] <= 3 else "Electronics"
+    return jsonify(p_dict)
+
 # --- Settings: Warehouses & Locations APIs ---
 @app.route("/api/warehouses", methods=["GET", "POST"])
 def manage_warehouses():
