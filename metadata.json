@@ -1,0 +1,6 @@
+{
+  "name": "StockSense - Modular Inventory Management System",
+  "description": "Smart Inventory. Real-Time Control. Centralized multi-warehouse inventory management with real-time telemetry, receipt verification, order dispatches, internal transfers, stock adjustments, and live audit ledger.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

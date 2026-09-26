@@ -1,0 +1,1013 @@
+<!-- ==============================================================================
+  StockSense - Modular Inventory Management System
+  Component: Dashboard & KPI Overview
+  Target File: templates/components/dashboard.html
+============================================================================== -->
+
+<section id="view-dashboard" class="view-panel active">
+  <style>
+    /* Scoped Design Variables & Theme Tokens */
+    #view-dashboard {
+      --ss-bg: #F8FAFC;
+      --ss-surface: #FFFFFF;
+      --ss-border: #E2E8F0;
+      --ss-primary: #714B67;
+      --ss-primary-hover: #5d3d55;
+      --ss-primary-light: #FBF7FA;
+      --ss-primary-subtle: #F3E8F0;
+      --ss-accent: #00A09D;
+      --ss-accent-hover: #008986;
+      --ss-accent-light: #F0FDF4;
+      --ss-accent-subtle: #E0F7F6;
+      --ss-text-main: #0F172A;
+      --ss-text-muted: #64748B;
+      --ss-text-light: #94A3B8;
+      --ss-danger: #DC2626;
+      --ss-danger-bg: #FEF2F2;
+      --ss-danger-border: #FECACA;
+      --ss-warning: #D97706;
+      --ss-warning-bg: #FFFBEB;
+      --ss-warning-border: #FDE68A;
+      --ss-info-bg: #F1F5F9;
+      --ss-info-text: #475569;
+      --ss-info-border: #CBD5E1;
+      --ss-radius-sm: 6px;
+      --ss-radius-md: 8px;
+      --ss-radius-lg: 12px;
+      --ss-radius-xl: 16px;
+      --ss-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --ss-shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+      --ss-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--ss-bg);
+      color: var(--ss-text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+
+    #view-dashboard * {
+      box-sizing: border-box;
+    }
+
+    /* Top Navbar */
+    #view-dashboard .ss-navbar {
+      background-color: var(--ss-surface);
+      border-bottom: 1px solid var(--ss-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      height: 64px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #view-dashboard .ss-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    #view-dashboard .ss-logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ss-primary);
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    #view-dashboard .ss-logo-icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, var(--ss-primary) 0%, #8E5F82 100%);
+      color: #FFFFFF;
+      border-radius: var(--ss-radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(113, 75, 103, 0.25);
+    }
+
+    #view-dashboard .ss-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    #view-dashboard .ss-nav-item {
+      position: relative;
+    }
+
+    #view-dashboard .ss-nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--ss-text-muted);
+      text-decoration: none;
+      border-radius: var(--ss-radius-md);
+      transition: all 0.15s ease-in-out;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+    }
+
+    #view-dashboard .ss-nav-link:hover,
+    #view-dashboard .ss-nav-item:hover > .ss-nav-link {
+      color: var(--ss-primary);
+      background-color: var(--ss-primary-light);
+    }
+
+    #view-dashboard .ss-nav-link.active {
+      color: var(--ss-primary);
+      background-color: var(--ss-primary-subtle);
+    }
+
+    /* Dropdown Menus */
+    #view-dashboard .ss-dropdown {
+      position: relative;
+    }
+
+    #view-dashboard .ss-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      min-width: 210px;
+      background: var(--ss-surface);
+      border: 1px solid var(--ss-border);
+      border-radius: var(--ss-radius-md);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      padding: 6px;
+      display: none;
+      z-index: 100;
+      animation: ssFadeSlide 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #view-dashboard .ss-dropdown:hover .ss-dropdown-menu {
+      display: block;
+    }
+
+    #view-dashboard .ss-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--ss-text-main);
+      text-decoration: none;
+      border-radius: var(--ss-radius-sm);
+      transition: background 0.15s ease;
+    }
+
+    #view-dashboard .ss-dropdown-item:hover {
+      background-color: var(--ss-bg);
+      color: var(--ss-primary);
+    }
+
+    /* Top Nav Right Items */
+    #view-dashboard .ss-nav-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    #view-dashboard .ss-icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--ss-radius-md);
+      border: 1px solid var(--ss-border);
+      background: var(--ss-surface);
+      color: var(--ss-text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    #view-dashboard .ss-icon-btn:hover {
+      border-color: var(--ss-primary);
+      color: var(--ss-primary);
+      background-color: var(--ss-primary-light);
+    }
+
+    #view-dashboard .ss-badge-dot {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 7px;
+      height: 7px;
+      background-color: var(--ss-danger);
+      border-radius: 50%;
+      border: 1.5px solid var(--ss-surface);
+    }
+
+    #view-dashboard .ss-user-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 8px 4px 4px;
+      border-radius: 9999px;
+      border: 1px solid var(--ss-border);
+      background: var(--ss-surface);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    #view-dashboard .ss-user-profile:hover {
+      border-color: #CBD5E1;
+      box-shadow: var(--ss-shadow-sm);
+    }
+
+    #view-dashboard .ss-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--ss-primary), var(--ss-accent));
+      color: #FFFFFF;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #view-dashboard .ss-user-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--ss-text-main);
+      padding-right: 4px;
+    }
+
+    /* Buttons Rule: 8px border-radius, 10px 20px padding, font-weight 600 */
+    #view-dashboard .ss-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      border: 1px solid transparent;
+      text-decoration: none;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
+    #view-dashboard .ss-btn-primary {
+      background-color: var(--ss-primary);
+      color: #FFFFFF;
+    }
+
+    #view-dashboard .ss-btn-primary:hover {
+      background-color: var(--ss-primary-hover);
+      box-shadow: 0 4px 12px rgba(113, 75, 103, 0.25);
+    }
+
+    #view-dashboard .ss-btn-accent {
+      background-color: var(--ss-accent);
+      color: #FFFFFF;
+    }
+
+    #view-dashboard .ss-btn-accent:hover {
+      background-color: var(--ss-accent-hover);
+      box-shadow: 0 4px 12px rgba(0, 160, 157, 0.25);
+    }
+
+    #view-dashboard .ss-btn-outline {
+      background-color: var(--ss-surface);
+      border-color: var(--ss-border);
+      color: var(--ss-text-main);
+    }
+
+    #view-dashboard .ss-btn-outline:hover {
+      border-color: var(--ss-primary);
+      color: var(--ss-primary);
+      background-color: var(--ss-primary-light);
+    }
+
+    #view-dashboard .ss-btn-sm {
+      padding: 6px 14px;
+      font-size: 0.8rem;
+    }
+
+    /* Main Container */
+    #view-dashboard .ss-main-content {
+      flex: 1;
+      padding: 28px 32px 48px;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Dashboard Header Section */
+    #view-dashboard .ss-header-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    #view-dashboard .ss-title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    #view-dashboard .ss-page-title {
+      margin: 0;
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--ss-text-main);
+      letter-spacing: -0.025em;
+    }
+
+    #view-dashboard .ss-page-subtitle {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--ss-text-muted);
+    }
+
+    #view-dashboard .ss-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #view-dashboard .ss-select-wrapper {
+      position: relative;
+    }
+
+    #view-dashboard .ss-select {
+      appearance: none;
+      background: var(--ss-surface);
+      border: 1px solid var(--ss-border);
+      border-radius: 8px;
+      padding: 10px 36px 10px 14px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--ss-text-main);
+      cursor: pointer;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    #view-dashboard .ss-select:focus {
+      border-color: var(--ss-primary);
+      box-shadow: 0 0 0 3px rgba(113, 75, 103, 0.12);
+    }
+
+    #view-dashboard .ss-select-icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--ss-text-muted);
+    }
+
+    /* Cards Grid */
+    #view-dashboard .ss-grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    /* KPI & Overview Card */
+    #view-dashboard .ss-card {
+      background-color: var(--ss-surface);
+      border: 1px solid var(--ss-border);
+      border-radius: var(--ss-radius-xl);
+      padding: 24px;
+      box-shadow: var(--ss-shadow-card);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    #view-dashboard .ss-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--ss-shadow-hover);
+      border-color: #CBD5E1;
+    }
+
+    /* Card Top */
+    #view-dashboard .ss-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    #view-dashboard .ss-card-type {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #view-dashboard .ss-card-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--ss-radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    #view-dashboard .ss-icon-teal {
+      background-color: var(--ss-accent-subtle);
+      color: var(--ss-accent);
+    }
+
+    #view-dashboard .ss-icon-purple {
+      background-color: var(--ss-primary-subtle);
+      color: var(--ss-primary);
+    }
+
+    #view-dashboard .ss-icon-slate {
+      background-color: #E2E8F0;
+      color: #475569;
+    }
+
+    #view-dashboard .ss-card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--ss-text-main);
+      margin: 0;
+    }
+
+    #view-dashboard .ss-card-subtitle {
+      font-size: 0.775rem;
+      color: var(--ss-text-muted);
+      margin: 2px 0 0 0;
+    }
+
+    #view-dashboard .ss-card-options {
+      color: var(--ss-text-light);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      padding: 4px;
+      border-radius: var(--ss-radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #view-dashboard .ss-card-options:hover {
+      color: var(--ss-text-main);
+      background-color: var(--ss-bg);
+    }
+
+    /* KPI Big Number Metric */
+    #view-dashboard .ss-metric-box {
+      margin-bottom: 20px;
+    }
+
+    #view-dashboard .ss-metric-value {
+      font-size: 2.15rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    #view-dashboard .ss-metric-value.teal {
+      color: var(--ss-accent);
+    }
+
+    #view-dashboard .ss-metric-value.purple {
+      color: var(--ss-primary);
+    }
+
+    /* Badges & Chips */
+    #view-dashboard .ss-badges-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+
+    #view-dashboard .ss-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+      line-height: 1;
+    }
+
+    #view-dashboard .ss-chip-danger {
+      background-color: var(--ss-danger-bg);
+      color: var(--ss-danger);
+      border-color: var(--ss-danger-border);
+    }
+
+    #view-dashboard .ss-chip-warning {
+      background-color: var(--ss-warning-bg);
+      color: var(--ss-warning);
+      border-color: var(--ss-warning-border);
+    }
+
+    #view-dashboard .ss-chip-neutral {
+      background-color: var(--ss-info-bg);
+      color: var(--ss-info-text);
+      border-color: var(--ss-border);
+    }
+
+    #view-dashboard .ss-chip-icon {
+      font-size: 0.7rem;
+    }
+
+    /* Card Footer / Action */
+    #view-dashboard .ss-card-footer {
+      border-top: 1px solid var(--ss-border);
+      padding-top: 16px;
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Warehouse Mini Summary Card Details */
+    #view-dashboard .ss-wh-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    #view-dashboard .ss-stat-item {
+      background-color: var(--ss-bg);
+      border: 1px solid var(--ss-border);
+      border-radius: var(--ss-radius-md);
+      padding: 10px 12px;
+    }
+
+    #view-dashboard .ss-stat-label {
+      font-size: 0.725rem;
+      font-weight: 600;
+      color: var(--ss-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    #view-dashboard .ss-stat-val {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--ss-text-main);
+      margin-top: 2px;
+    }
+
+    #view-dashboard .ss-progress-container {
+      margin-bottom: 18px;
+    }
+
+    #view-dashboard .ss-progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.775rem;
+      font-weight: 600;
+      color: var(--ss-text-muted);
+      margin-bottom: 6px;
+    }
+
+    #view-dashboard .ss-progress-bar {
+      height: 8px;
+      background-color: #E2E8F0;
+      border-radius: 9999px;
+      overflow: hidden;
+      display: flex;
+    }
+
+    #view-dashboard .ss-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--ss-accent) 0%, var(--ss-primary) 100%);
+      border-radius: 9999px;
+      transition: width 0.4s ease;
+    }
+
+    @keyframes ssFadeSlide {
+      from {
+        opacity: 0;
+        transform: translateY(-6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 900px) {
+      #view-dashboard .ss-navbar {
+        padding: 0 16px;
+      }
+      #view-dashboard .ss-nav-links {
+        display: none;
+      }
+      #view-dashboard .ss-main-content {
+        padding: 20px 16px;
+      }
+      #view-dashboard .ss-grid-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <!-- 1. Top Navbar -->
+  <nav class="ss-navbar" aria-label="Main Navigation">
+    <div class="ss-nav-left">
+      <a href="#" class="ss-logo-container" title="StockSense Overview">
+        <div class="ss-logo-icon">
+          <!-- Cube / Box Logo Icon -->
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+        </div>
+        <span>StockSense</span>
+      </a>
+
+      <ul class="ss-nav-links">
+        <li class="ss-nav-item">
+          <a href="#dashboard" class="ss-nav-link active">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            Dashboard
+          </a>
+        </li>
+
+        <li class="ss-nav-item ss-dropdown">
+          <button type="button" class="ss-nav-link" aria-expanded="false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="17 1 21 5 17 9"></polyline>
+              <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+              <polyline points="7 23 3 19 7 15"></polyline>
+              <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+            </svg>
+            Operations
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div class="ss-dropdown-menu">
+            <a href="#receipts" class="ss-dropdown-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ss-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Receipts (Incoming)
+            </a>
+            <a href="#deliveries" class="ss-dropdown-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ss-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Deliveries (Outgoing)
+            </a>
+            <a href="#internal-transfers" class="ss-dropdown-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 3 21 3 21 8"></polyline>
+                <line x1="4" y1="20" x2="21" y2="3"></line>
+                <polyline points="21 16 21 21 16 21"></polyline>
+                <line x1="15" y1="15" x2="21" y2="21"></line>
+                <line x1="4" y1="4" x2="9" y2="9"></line>
+              </svg>
+              Internal Transfers
+            </a>
+            <a href="#adjustments" class="ss-dropdown-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              Physical Adjustments
+            </a>
+          </div>
+        </li>
+
+        <li class="ss-nav-item">
+          <a href="#stock" class="ss-nav-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            Stock
+          </a>
+        </li>
+
+        <li class="ss-nav-item">
+          <a href="#history" class="ss-nav-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            Move History
+          </a>
+        </li>
+
+        <li class="ss-nav-item">
+          <a href="#settings" class="ss-nav-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            Settings
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="ss-nav-right">
+      <button class="ss-icon-btn" title="Notifications" aria-label="Notifications">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <span class="ss-badge-dot"></span>
+      </button>
+
+      <!-- User Avatar -->
+      <div class="ss-user-profile" title="Signed in as Anurag Kashyap">
+        <div class="ss-avatar">AK</div>
+        <span class="ss-user-name">Inventory Lead</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ss-text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <main class="ss-main-content">
+    
+    <!-- Top Action & Filter Header -->
+    <div class="ss-header-row">
+      <div class="ss-title-block">
+        <h1 class="ss-page-title">Operations Dashboard</h1>
+        <p class="ss-page-subtitle">Real-time inventory flow, incoming receipts, and customer dispatches</p>
+      </div>
+
+      <div class="ss-header-actions">
+        <!-- Warehouse Selector Filter -->
+        <div class="ss-select-wrapper">
+          <select class="ss-select" id="ss-warehouse-select" aria-label="Warehouse Location">
+            <option value="WH" selected>Main Warehouse (WH)</option>
+            <option value="WH2">Secondary Warehouse (WH-NORTH)</option>
+            <option value="ALL">All Warehouses Combined</option>
+          </select>
+          <svg class="ss-select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+
+        <!-- Action Button (8px radius, 10px 20px padding, font-weight 600) -->
+        <button class="ss-btn ss-btn-primary" id="btn-create-transfer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          New Operation
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI & Summary Cards Grid -->
+    <div class="ss-grid-cards">
+      
+      <!-- 2. KPI Card 1: Receipts -->
+      <div class="ss-card" id="card-receipts">
+        <div>
+          <div class="ss-card-header">
+            <div class="ss-card-type">
+              <div class="ss-card-icon ss-icon-teal">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+              </div>
+              <div>
+                <h3 class="ss-card-title">Receipts</h3>
+                <p class="ss-card-subtitle">Inbound shipments & POs</p>
+              </div>
+            </div>
+            <button class="ss-card-options" title="More options" aria-label="More options">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="19" cy="12" r="1"></circle>
+                <circle cx="5" cy="12" r="1"></circle>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Big Number: "4 to receive" (Teal color #00A09D) -->
+          <div class="ss-metric-box">
+            <div class="ss-metric-value teal">
+              <span>4</span>
+              <span style="font-size: 1.15rem; font-weight: 600; color: var(--ss-text-muted);">to receive</span>
+            </div>
+          </div>
+
+          <!-- Sub-badges: "1 Late" (Red warning chip for schedule date < today), "6 Operations" -->
+          <div class="ss-badges-row">
+            <span class="ss-chip ss-chip-danger" title="Schedule date is earlier than today">
+              <svg class="ss-chip-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              1 Late
+            </span>
+            <span class="ss-chip ss-chip-neutral">
+              <svg class="ss-chip-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                <polyline points="2 17 12 22 22 17"></polyline>
+                <polyline points="2 12 12 17 22 12"></polyline>
+              </svg>
+              6 Operations
+            </span>
+          </div>
+        </div>
+
+        <div class="ss-card-footer">
+          <a href="#receipts" class="ss-btn ss-btn-accent ss-btn-sm" style="width: 100%;">
+            Process Receipts
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- 3. KPI Card 2: Delivery -->
+      <div class="ss-card" id="card-deliveries">
+        <div>
+          <div class="ss-card-header">
+            <div class="ss-card-type">
+              <div class="ss-card-icon ss-icon-purple">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </div>
+              <div>
+                <h3 class="ss-card-title">Delivery Orders</h3>
+                <p class="ss-card-subtitle">Outbound customer dispatches</p>
+              </div>
+            </div>
+            <button class="ss-card-options" title="More options" aria-label="More options">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="19" cy="12" r="1"></circle>
+                <circle cx="5" cy="12" r="1"></circle>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Big Number: "4 to Deliver" (Purple color #714B67) -->
+          <div class="ss-metric-box">
+            <div class="ss-metric-value purple">
+              <span>4</span>
+              <span style="font-size: 1.15rem; font-weight: 600; color: var(--ss-text-muted);">to Deliver</span>
+            </div>
+          </div>
+
+          <!-- Sub-badges: "1 Late", "2 Waiting" (Amber chip for out of stock), "6 Operations" -->
+          <div class="ss-badges-row">
+            <span class="ss-chip ss-chip-danger" title="Schedule date is earlier than today">
+              <svg class="ss-chip-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              1 Late
+            </span>
+            <span class="ss-chip ss-chip-warning" title="Waiting for stock availability">
+              <svg class="ss-chip-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              2 Waiting
+            </span>
+            <span class="ss-chip ss-chip-neutral">
+              <svg class="ss-chip-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                <polyline points="2 17 12 22 22 17"></polyline>
+                <polyline points="2 12 12 17 22 12"></polyline>
+              </svg>
+              6 Operations
+            </span>
+          </div>
+        </div>
+
+        <div class="ss-card-footer">
+          <a href="#deliveries" class="ss-btn ss-btn-primary ss-btn-sm" style="width: 100%;">
+            Process Deliveries
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- 4. Warehouse Mini Summary Card (Default: Main Warehouse WH) -->
+      <div class="ss-card" id="card-warehouse-summary">
+        <div>
+          <div class="ss-card-header">
+            <div class="ss-card-type">
+              <div class="ss-card-icon ss-icon-slate">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h3 class="ss-card-title">Main Warehouse (WH)</h3>
+                <p class="ss-card-subtitle">Primary Storage Location</p>
+              </div>
+            </div>
+            <span class="ss-chip" style="background-color: #ECFDF5; color: #059669; border-color: #A7F3D0;">
+              Operational
+            </span>
+          </div>
+
+          <div class="ss-wh-stats">
+            <div class="ss-stat-item">
+              <div class="ss-stat-label">Total SKUs</div>
+              <div class="ss-stat-val">1,248</div>
+            </div>
+            <div class="ss-stat-item">
+              <div class="ss-stat-label">Stock Units</div>
+              <div class="ss-stat-val">48,920</div>
+            </div>
+          </div>
+
+          <!-- Capacity Utilization Progress -->
+          <div class="ss-progress-container">
+            <div class="ss-progress-header">
+              <span>Occupancy Capacity</span>
+              <span>74% Utilized</span>
+            </div>
+            <div class="ss-progress-bar">
+              <div class="ss-progress-fill" style="width: 74%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ss-card-footer">
+          <a href="#stock" class="ss-btn ss-btn-outline ss-btn-sm" style="width: 100%;">
+            View Stock Ledger
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+</section>
