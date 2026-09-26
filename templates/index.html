@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body class="light-theme">
@@ -353,6 +355,106 @@
       {% include 'components/inventory_adjustment.html' %}
 
     </main>
+  </div>
+
+  <!-- ==================== PRODUCT SUPPLY CHAIN & ORIGIN ROUTE MAP MODAL ==================== -->
+  <div id="modal-product-origin" class="modal-overlay hidden">
+    <div class="modal-container" style="max-width: 780px; width: 92%;">
+      <div class="modal-header" style="background: #FAFAFC; border-bottom: 1px solid #E2E8F0; padding: 18px 24px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(0, 160, 157, 0.12); color: #00A09D; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+            <i class="fa-solid fa-map-location-dot"></i>
+          </div>
+          <div>
+            <h2 style="font-size: 1.25rem; margin: 0; color: #0F172A;" id="origin-modal-title">Product Supply Chain &amp; Origin Map</h2>
+            <small style="color: #64748B;" id="origin-modal-subtitle">Real-time multimodal logistics tracking &amp; supplier origin route</small>
+          </div>
+        </div>
+        <button class="close-btn" onclick="closeModal('modal-product-origin')">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px 24px; max-height: calc(85vh - 120px); overflow-y: auto;">
+        
+        <!-- Top Info Cards: Supplier & Tracking -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 18px;">
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px 16px;">
+            <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">Primary Supplier</span>
+            <strong id="origin-supplier-name" style="font-size: 14px; color: #0F172A; display: block;">Azure Interior Supply Co.</strong>
+            <span id="origin-supplier-city" style="font-size: 12px; color: #64748B;">Mumbai Logistics Park, Maharashtra</span>
+          </div>
+
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px 16px;">
+            <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">Carrier Logistics</span>
+            <strong id="origin-carrier-info" style="font-size: 14px; color: #714B67; display: block;">BlueDart Express Freight</strong>
+            <span id="origin-tracking-no" style="font-size: 12px; color: #64748B; font-family: monospace;">AWB: IN-BLUEDART-88912</span>
+          </div>
+
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px 16px;">
+            <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748B; display: block; margin-bottom: 4px;">Transit Status &amp; Lead Time</span>
+            <span id="origin-status-badge" style="display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: #E0F2FE; color: #0284C7; margin-bottom: 4px;">In Transit</span>
+            <span id="origin-lead-time" style="font-size: 12px; color: #64748B; display: block;">Est. Lead Time: 2 Days</span>
+          </div>
+        </div>
+
+        <!-- Interactive Map Container -->
+        <div style="position: relative; border-radius: 8px; overflow: hidden; border: 1px solid #CBD5E1; box-shadow: 0 2px 6px rgba(0,0,0,0.06); margin-bottom: 18px;">
+          <div id="product-origin-map" style="width: 100%; height: 320px; background: #e5e7eb;"></div>
+          <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(255,255,255,0.95); backdrop-filter: blur(4px); padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; color: #334155; border: 1px solid rgba(0,0,0,0.08); z-index: 1000; display: flex; align-items: center; gap: 12px;">
+            <span><i class="fa-solid fa-circle" style="color: #00A09D; font-size: 9px;"></i> Supplier Origin</span>
+            <span><i class="fa-solid fa-circle" style="color: #D97706; font-size: 9px;"></i> Transit Gateway</span>
+            <span><i class="fa-solid fa-circle" style="color: #714B67; font-size: 9px;"></i> Main Warehouse</span>
+          </div>
+        </div>
+
+        <!-- Route Milestones & Location Stock -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+          <!-- Milestones -->
+          <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px 16px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: #0F172A; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-route" style="color: #714B67;"></i> Logistics Milestones
+            </h4>
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
+              <div style="display: flex; gap: 10px; align-items: flex-start;">
+                <i class="fa-solid fa-check-circle" style="color: #10B981; margin-top: 2px;"></i>
+                <div>
+                  <strong style="color: #0F172A;">Vendor Dispatch Facility:</strong>
+                  <span id="milestone-origin" style="color: #64748B;">Mumbai Cargo Terminal</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px; align-items: flex-start;">
+                <i class="fa-solid fa-truck-fast" style="color: #D97706; margin-top: 2px;"></i>
+                <div>
+                  <strong style="color: #0F172A;">National Transit Hub:</strong>
+                  <span id="milestone-hub" style="color: #64748B;">Ahmedabad Western Gateway</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px; align-items: flex-start;">
+                <i class="fa-solid fa-warehouse" style="color: #714B67; margin-top: 2px;"></i>
+                <div>
+                  <strong style="color: #0F172A;">Receiving Warehouse:</strong>
+                  <span style="color: #64748B;">Main Warehouse (WH) - Inward Receiving Dock</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Per-location Quants -->
+          <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px 16px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: #0F172A; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-cubes-stacked" style="color: #00A09D;"></i> Real-Time Multi-Location Quants
+            </h4>
+            <div id="origin-location-quants-list" style="display: flex; flex-direction: column; gap: 6px;">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer" style="background: #FAFAFC; border-top: 1px solid #E2E8F0; padding: 14px 24px; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-product-origin')">Close</button>
+      </div>
+    </div>
   </div>
 
   <!-- ==================== AUTH SELECTION & PROVIDER MODALS ==================== -->

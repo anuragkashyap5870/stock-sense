@@ -616,6 +616,13 @@ function filterStockTable() {
             <span class="ss-cost">${p.unit_cost.toLocaleString()} Rs</span>
           </td>
           <td>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+              ${(p.locations && p.locations.length > 0)
+                ? p.locations.map(l => `<span style="font-size: 11px; font-weight: 600; background: #F1F5F9; border: 1px solid #CBD5E1; color: #334155; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-location-dot" style="color: #714B67; font-size: 9px;"></i>${l.location_code}: <strong>${l.quantity}</strong></span>`).join("")
+                : `<span style="font-size: 11px; color: #94A3B8;">WH/Stock1: ${p.on_hand}</span>`}
+            </div>
+          </td>
+          <td>
             <span class="ss-badge ss-badge-onhand">
               <span class="ss-dot"></span>
               <span class="val-onhand">${p.on_hand}</span> Units
@@ -627,7 +634,16 @@ function filterStockTable() {
               <span class="val-freetouse" style="${p.free_to_use <= 0 ? 'color: #ef4444; font-weight: bold;' : ''}">${p.free_to_use}</span> Available
             </span>
           </td>
-          <td style="text-align: right;">
+          <td style="text-align: right; white-space: nowrap;">
+            <button 
+              type="button" 
+              class="ss-btn ss-btn-outline ss-btn-sm" 
+              onclick="openProductOriginMap(${p.id})"
+              title="View Supplier Origin & Logistics Route Map"
+              style="margin-right: 6px;"
+            >
+              <i class="fa-solid fa-map-location-dot" style="color: #00A09D; margin-right: 4px;"></i> Origin Map
+            </button>
             <button 
               type="button" 
               class="ss-btn ss-btn-outline ss-btn-sm" 
@@ -655,11 +671,21 @@ function filterStockTable() {
           <br><small class="text-muted font-mono">[${p.code}]</small>
         </td>
         <td><strong>${p.unit_cost.toLocaleString()} Rs</strong></td>
+        <td>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+            ${(p.locations && p.locations.length > 0)
+              ? p.locations.map(l => `<span style="font-size: 11px; font-weight: 600; background: #F1F5F9; border: 1px solid #CBD5E1; color: #334155; padding: 2px 6px; border-radius: 4px;">${l.location_code}: ${l.quantity}</span>`).join("")
+              : `<span style="font-size: 11px; color: #94A3B8;">WH/Stock1: ${p.on_hand}</span>`}
+          </div>
+        </td>
         <td><span class="font-mono font-bold">${p.on_hand}</span></td>
         <td>
           <span class="font-mono ${p.free_to_use <= 0 ? 'text-danger font-bold' : ''}">${p.free_to_use}</span>
         </td>
-        <td class="text-right">
+        <td class="text-right" style="white-space: nowrap;">
+          <button class="btn btn-outline btn-sm" onclick="openProductOriginMap(${p.id})" style="margin-right: 4px;">
+            <i class="fa-solid fa-map-location-dot" style="color: #00A09D;"></i> Map
+          </button>
           <button class="btn btn-outline btn-sm" onclick="openUpdateStockModal(${p.id}, '${p.name}', ${p.on_hand}, ${p.free_to_use})">
             <i class="fa-solid fa-pen-to-square"></i> Update Stock
           </button>
@@ -1123,14 +1149,17 @@ async function advanceDeliveryStatus(status) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status })
     });
+    const data = await res.json();
     if (res.ok) {
       closeModal("modal-delivery-detail");
       loadDeliveries();
       loadStockTable();
       loadDashboardStats();
+    } else {
+      alert("⚠️ " + (data.error || "Cannot update delivery status. Insufficient inventory."));
     }
   } catch (err) {
-    alert("Error changing status");
+    alert("Error changing status: " + err.message);
   }
 }
 
@@ -1695,3 +1724,153 @@ async function applyAllAdjustments() {
   }
 }
 
+// ==================== PRODUCT SUPPLY CHAIN ORIGIN & LIVE LEAFLET ROUTE MAP ====================
+let productOriginMapInstance = null;
+
+async function openProductOriginMap(productId) {
+  openModal("modal-product-origin");
+
+  // Show loading indicator in quant breakdown
+  const listEl = document.getElementById("origin-location-quants-list");
+  if (listEl) {
+    listEl.innerHTML = '<span style="color: #64748B; font-size: 12px;"><i class="fa-solid fa-spinner fa-spin"></i> Retrieving supply route intelligence...</span>';
+  }
+
+  try {
+    const res = await fetch(`/api/products/${productId}/origin`);
+    if (!res.ok) {
+      alert("Unable to load product logistics origin data.");
+      return;
+    }
+    const data = await res.json();
+
+    // Set modal headers
+    const titleEl = document.getElementById("origin-modal-title");
+    const subEl = document.getElementById("origin-modal-subtitle");
+    if (titleEl) titleEl.textContent = `${data.name} [${data.code}] — Origin & Logistics Route`;
+    if (subEl) subEl.innerHTML = `Sourced from <strong>${data.supplier}</strong> &bull; Origin: ${data.origin_city}`;
+
+    // Top info cards
+    const suppName = document.getElementById("origin-supplier-name");
+    const suppCity = document.getElementById("origin-supplier-city");
+    const carrier = document.getElementById("origin-carrier-info");
+    const tracking = document.getElementById("origin-tracking-no");
+    const status = document.getElementById("origin-status-badge");
+    const lead = document.getElementById("origin-lead-time");
+
+    if (suppName) suppName.textContent = data.supplier || "National Supply Partner";
+    if (suppCity) suppCity.textContent = data.origin_city || "Regional Industrial Zone";
+    if (carrier) carrier.textContent = data.carrier || "InterCity Freight Logistics";
+    if (tracking) tracking.textContent = `AWB: IN-${(data.code || "SKU").toUpperCase()}-${productId * 271 + 3108}`;
+    if (status) status.textContent = data.status || "In Transit";
+    if (lead) lead.textContent = `Est. Lead Time: ${data.lead_time || "2 Days"}`;
+
+    // Milestone details
+    const mOrigin = document.getElementById("milestone-origin");
+    const mHub = document.getElementById("milestone-hub");
+    if (mOrigin) mOrigin.textContent = `${data.origin_city} (Vendor Dispatch Dock)`;
+    if (mHub) mHub.textContent = `${data.transit_hub} (Midway Logistics Hub)`;
+
+    // Location Quants Breakdown
+    if (listEl) {
+      if (data.locations && data.locations.length > 0) {
+        listEl.innerHTML = data.locations.map(loc => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #F8FAFC; border-radius: 6px; border: 1px solid #E2E8F0;">
+            <span style="font-weight: 600; color: #334155; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-location-dot" style="color: #714B67;"></i> ${loc.location_code}
+            </span>
+            <span style="font-weight: 700; color: #0F172A; font-size: 12px; font-family: monospace;">
+              ${loc.quantity} Units
+            </span>
+          </div>
+        `).join("");
+      } else {
+        listEl.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #F8FAFC; border-radius: 6px; border: 1px solid #E2E8F0;">
+            <span style="font-weight: 600; color: #334155; font-size: 12px;">WH/Stock1 (Primary Location)</span>
+            <span style="font-weight: 700; color: #0F172A; font-size: 12px; font-family: monospace;">${data.on_hand} Units</span>
+          </div>
+        `;
+      }
+    }
+
+    // Render interactive Leaflet Map after modal animation frame
+    setTimeout(() => {
+      initOriginLeafletMap(data);
+    }, 200);
+
+  } catch (err) {
+    console.error("Error opening origin map:", err);
+    alert("Could not load product origin data");
+  }
+}
+
+function initOriginLeafletMap(data) {
+  const mapContainer = document.getElementById("product-origin-map");
+  if (!mapContainer || typeof L === "undefined") return;
+
+  if (productOriginMapInstance) {
+    productOriginMapInstance.remove();
+    productOriginMapInstance = null;
+  }
+
+  const originCoord = [data.origin_lat || 19.0760, data.origin_lng || 72.8777];
+  const hubCoord = [data.transit_lat || 23.0225, data.transit_lng || 72.5714];
+  const destCoord = [data.dest_lat || 28.6139, data.dest_lng || 77.2090];
+
+  const map = L.map("product-origin-map", {
+    scrollWheelZoom: true,
+    zoomControl: true
+  }).setView(hubCoord, 5);
+
+  // Standard OpenStreetMap tiles (100% free, crisp, no watermarks)
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
+  }).addTo(map);
+
+  function addWaypointMarker(latlng, color, title, desc, iconClass) {
+    const marker = L.circleMarker(latlng, {
+      radius: 9,
+      fillColor: color,
+      color: "#FFFFFF",
+      weight: 3,
+      opacity: 1,
+      fillOpacity: 0.95
+    }).addTo(map);
+
+    marker.bindPopup(`
+      <div style="font-family: inherit; font-size: 12px; min-width: 180px; padding: 4px;">
+        <div style="font-weight: 700; color: ${color}; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+          <i class="${iconClass}"></i> ${title}
+        </div>
+        <div style="color: #334155; font-size: 11px; line-height: 1.4;">${desc}</div>
+      </div>
+    `);
+    return marker;
+  }
+
+  const m1 = addWaypointMarker(originCoord, "#00A09D", "Supplier Origin", `<strong>${data.supplier}</strong><br>${data.origin_city}`, "fa-solid fa-industry");
+  const m2 = addWaypointMarker(hubCoord, "#D97706", "National Transit Hub", `<strong>${data.transit_hub}</strong><br>Carrier: ${data.carrier}`, "fa-solid fa-truck-fast");
+  const m3 = addWaypointMarker(destCoord, "#714B67", "StockSense Warehouse", `<strong>${data.dest_warehouse}</strong><br>Stock Available: ${data.on_hand} Units`, "fa-solid fa-warehouse");
+
+  // Draw Supply Route Polyline
+  const routePoints = [originCoord, hubCoord, destCoord];
+  const polyline = L.polyline(routePoints, {
+    color: "#714B67",
+    weight: 4,
+    opacity: 0.85,
+    dashArray: "8, 8",
+    lineCap: "round",
+    lineJoin: "round"
+  }).addTo(map);
+
+  // Fit view to route and open middle hub popup
+  map.fitBounds(polyline.getBounds(), { padding: [45, 45] });
+  m2.openPopup();
+
+  productOriginMapInstance = map;
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 100);
+}
