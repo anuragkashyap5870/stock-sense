@@ -109,7 +109,9 @@ function togglePasswordVisibility(inputId) {
 function openForgotPasswordModal(e) {
   if (e) e.preventDefault();
   const alertBox = document.getElementById("reset-alert-box");
+  const successBox = document.getElementById("reset-success-box");
   if (alertBox) alertBox.classList.add("hidden");
+  if (successBox) successBox.classList.add("hidden");
   const form = document.getElementById("form-forgot-password");
   if (form) form.reset();
   openModal("modal-forgot-password");
@@ -119,17 +121,59 @@ function showForgotPassword(e) {
   openForgotPasswordModal(e);
 }
 
-async function submitForgotPassword(e) {
+async function requestPasswordOtp() {
+  const identifierInput = document.getElementById("reset-user-identifier");
+  const identifier = identifierInput ? identifierInput.value.trim() : "";
+  const alertBox = document.getElementById("reset-alert-box");
+  const alertMsg = document.getElementById("reset-alert-msg");
+  const successBox = document.getElementById("reset-success-box");
+  const successMsg = document.getElementById("reset-success-msg");
+
+  if (!identifier) {
+    if (alertMsg) alertMsg.textContent = "Please enter your Login ID, Email, or Phone first.";
+    if (alertBox) alertBox.classList.remove("hidden");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (alertBox) alertBox.classList.add("hidden");
+      if (successMsg) successMsg.textContent = data.message;
+      if (successBox) successBox.classList.remove("hidden");
+      const otpInput = document.getElementById("reset-otp-input");
+      if (otpInput) {
+        otpInput.value = data.otp || "123456";
+        otpInput.focus();
+      }
+    } else {
+      if (alertMsg) alertMsg.textContent = data.message || "Failed to dispatch OTP.";
+      if (alertBox) alertBox.classList.remove("hidden");
+    }
+  } catch (err) {
+    if (alertMsg) alertMsg.textContent = "Server communication failure.";
+    if (alertBox) alertBox.classList.remove("hidden");
+  }
+}
+
+async function submitForgotPasswordWithOtp(e) {
   e.preventDefault();
   const identifier = document.getElementById("reset-user-identifier").value.trim();
+  const otp = document.getElementById("reset-otp-input").value.trim();
   const password = document.getElementById("reset-new-pwd").value.trim();
   const confirmPassword = document.getElementById("reset-confirm-pwd").value.trim();
   const alertBox = document.getElementById("reset-alert-box");
   const alertMsg = document.getElementById("reset-alert-msg");
+  const successBox = document.getElementById("reset-success-box");
 
   if (password !== confirmPassword) {
-    alertMsg.textContent = "Passwords do not match.";
-    alertBox.classList.remove("hidden");
+    if (alertMsg) alertMsg.textContent = "Passwords do not match.";
+    if (alertBox) alertBox.classList.remove("hidden");
     return;
   }
 
@@ -137,20 +181,81 @@ async function submitForgotPassword(e) {
     const res = await fetch("/api/reset-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identifier, password, confirm_password: confirmPassword })
+      body: JSON.stringify({ identifier, otp, password, confirm_password: confirmPassword })
     });
     const data = await res.json();
     if (data.success) {
       closeModal("modal-forgot-password");
       alert("✅ " + data.message);
-      document.getElementById("login-id-input").value = identifier;
+      const loginIdInput = document.getElementById("login-id-input");
+      if (loginIdInput) loginIdInput.value = identifier;
     } else {
-      alertMsg.textContent = data.message || "Failed to reset password.";
-      alertBox.classList.remove("hidden");
+      if (alertMsg) alertMsg.textContent = data.message || "Failed to reset password.";
+      if (alertBox) alertBox.classList.remove("hidden");
     }
   } catch (err) {
-    alertMsg.textContent = "Error communicating with server.";
-    alertBox.classList.remove("hidden");
+    if (alertMsg) alertMsg.textContent = "Error communicating with server.";
+    if (alertBox) alertBox.classList.remove("hidden");
+  }
+}
+
+// Internal Transfer / Scrap modal methods (PDF Requirement 4)
+function openInternalTransferModal(e) {
+  if (e) e.preventDefault();
+  const prodSelect = document.getElementById("transfer-prod-select");
+  if (prodSelect) {
+    prodSelect.innerHTML = currentProducts.map(p => 
+      `<option value="${p.id}">${p.name} (SKU: ${p.code} • On-Hand: ${p.on_hand})</option>`
+    ).join("");
+  }
+  handleTransferTypeChange();
+  openModal("modal-internal-transfer");
+}
+
+function handleTransferTypeChange() {
+  const type = document.getElementById("transfer-type-select")?.value || "INTERNAL";
+  const toLocGroup = document.getElementById("to-loc-group");
+  const btn = document.getElementById("btn-submit-transfer");
+  if (type === "SCRAP") {
+    if (toLocGroup) toLocGroup.style.display = "none";
+    if (btn) btn.innerHTML = `<i class="fa-solid fa-trash-can"></i> Confirm Scrap Write-Off`;
+  } else {
+    if (toLocGroup) toLocGroup.style.display = "block";
+    if (btn) btn.innerHTML = `<i class="fa-solid fa-check"></i> Execute Transfer`;
+  }
+}
+
+async function submitInternalTransfer(e) {
+  e.preventDefault();
+  const prodId = document.getElementById("transfer-prod-select").value;
+  const type = document.getElementById("transfer-type-select").value;
+  const fromLoc = document.getElementById("transfer-from-loc").value;
+  const toLoc = (type === "SCRAP") ? "Scrap Loss" : document.getElementById("transfer-to-loc").value;
+  const qty = parseInt(document.getElementById("transfer-quantity").value, 10);
+
+  try {
+    const res = await fetch("/api/transfers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        product_id: prodId,
+        type: type,
+        from_location: fromLoc,
+        to_location: toLoc,
+        quantity: qty
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeModal("modal-internal-transfer");
+      alert("✅ " + data.message);
+      // Reload stock, move history and dashboard
+      loadInitialData();
+    } else {
+      alert("⚠️ Error: " + (data.message || "Failed to execute transfer"));
+    }
+  } catch (err) {
+    alert("Server error during internal transfer.");
   }
 }
 

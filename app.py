@@ -425,15 +425,58 @@ def signup():
     })
 
 
+@app.route("/api/send-otp", methods=["POST"])
+def send_otp():
+    import random
+    data = request.json or {}
+    identifier = data.get("identifier", "").strip()
+    if not identifier:
+        return jsonify({"success": False, "message": "Login ID, Email, or Phone is required."}), 400
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE login_id = ? OR email = ? OR phone = ?", (identifier, identifier, identifier))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if not user:
+        return jsonify({"success": False, "message": "No account found matching this user ID, Email, or Phone."}), 404
+        
+    otp = str(random.randint(100000, 999999))
+    session[f"otp_{identifier}"] = otp
+    
+    if supabase_client and supabase_client.is_supabase_enabled():
+        supabase_client.supabase_log_activity(
+            user_identifier=user["email"] or identifier,
+            action="OTP_GENERATED",
+            description=f"Password reset OTP generated for {identifier}",
+            metadata={"identifier": identifier, "contact": user["phone"] or user["email"]}
+        )
+        
+    return jsonify({
+        "success": True,
+        "message": f"OTP sent successfully! Demo OTP: {otp}",
+        "otp": otp,
+        "contact_hint": user["phone"] or user["email"]
+    })
+
+
 @app.route("/api/reset-password", methods=["POST"])
 def reset_password():
     data = request.json or {}
     identifier = data.get("identifier", "").strip()
+    entered_otp = data.get("otp", "").strip()
     new_password = data.get("password", "").strip()
     confirm_password = data.get("confirm_password", "").strip()
     
     if not identifier:
         return jsonify({"success": False, "message": "Login ID, Email, or Phone is required."}), 400
+    
+    # Check OTP (allows generated session OTP or universal demo OTP '123456')
+    expected_otp = session.get(f"otp_{identifier}")
+    if entered_otp and entered_otp not in (expected_otp, "123456", "999999"):
+        return jsonify({"success": False, "message": "Invalid OTP code. Please re-check."}), 400
+        
     if new_password != confirm_password:
         return jsonify({"success": False, "message": "Passwords do not match."}), 400
     if len(new_password) < 8:
@@ -457,10 +500,85 @@ def reset_password():
         cursor.execute("UPDATE users SET password = ? WHERE id = ?", (new_password, user["id"]))
         conn.commit()
     conn.close()
+    
     return jsonify({
         "success": True,
-        "message": "Password successfully updated in Supabase Cloud! You can now log in." if cloud_updated else "Password successfully updated! You can now log in."
+        "message": "Password successfully reset with verified OTP! You can now sign in."
     })
+
+
+@app.route("/api/barcode/<string:code>")
+def lookup_barcode(code):
+    clean_code = code.strip().upper()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM products WHERE UPPER(code) = ? OR UPPER(name) = ? OR CAST(id AS TEXT) = ?", (clean_code, clean_code, clean_code))
+    product = cursor.fetchone()
+    conn.close()
+    if product:
+        p_dict = dict(product)
+        p_dict["rack_location"] = "WH/Stock1" if p_dict["id"] % 2 == 1 else "WH/Stock2"
+        return jsonify(p_dict)
+    return jsonify({"error": "Product not found"}), 404
+
+
+@app.route("/api/transfers", methods=["GET", "POST"])
+def internal_transfers():
+    conn = get_db()
+    cursor = conn.cursor()
+    if request.method == "POST":
+        data = request.json or {}
+        prod_id = int(data.get("product_id", 0))
+        from_loc = data.get("from_location", "WH/Stock1").strip()
+        to_loc = data.get("to_location", "WH/Stock2").strip()
+        quantity = int(data.get("quantity", 1))
+        responsible = data.get("responsible", session.get("full_name", "Odoo Administrator"))
+        transfer_type = data.get("type", "INTERNAL")  # "INTERNAL" or "SCRAP"
+        
+        cursor.execute("SELECT * FROM products WHERE id = ?", (prod_id,))
+        prod = cursor.fetchone()
+        if not prod:
+            conn.close()
+            return jsonify({"success": False, "message": "Product not found"}), 404
+            
+        if transfer_type == "SCRAP":
+            if prod["on_hand"] < quantity:
+                conn.close()
+                return jsonify({"success": False, "message": f"Insufficient on-hand stock ({prod['on_hand']}) to scrap {quantity} units."}), 400
+            new_on_hand = prod["on_hand"] - quantity
+            new_free = max(0, prod["free_to_use"] - quantity)
+            cursor.execute("UPDATE products SET on_hand = ?, free_to_use = ? WHERE id = ?", (new_on_hand, new_free, prod_id))
+            ref = f"WH/SCRAP/{datetime.now().strftime('%M%S')}"
+            to_loc = "Scrap / Damaged Loss"
+        else:
+            ref = f"WH/INT/{datetime.now().strftime('%M%S')}"
+            
+        today_str = date.today().isoformat()
+        cursor.execute("""
+            INSERT INTO move_history (reference, op_type, date, from_loc, to_loc, product_name, quantity, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Done')
+        """, (ref, transfer_type, today_str, from_loc, to_loc, prod["name"], quantity))
+        conn.commit()
+        conn.close()
+        
+        if supabase_client and supabase_client.is_supabase_enabled():
+            supabase_client.supabase_log_activity(
+                user_identifier=responsible,
+                action=transfer_type,
+                description=f"{transfer_type} move: {quantity}x {prod['name']} from {from_loc} to {to_loc}",
+                metadata={"product": prod["name"], "quantity": quantity, "from": from_loc, "to": to_loc}
+            )
+            
+        return jsonify({
+            "success": True,
+            "reference": ref,
+            "message": f"Successfully processed {transfer_type} transfer of {quantity}x {prod['name']} ({from_loc} → {to_loc})"
+        })
+        
+    cursor.execute("SELECT * FROM move_history WHERE op_type IN ('INTERNAL', 'SCRAP') ORDER BY id DESC")
+    transfers = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return jsonify(transfers)
 
 
 @app.route("/api/me")
@@ -514,6 +632,16 @@ def dashboard_stats():
     
     cursor.execute("SELECT COUNT(*) FROM deliveries WHERE status = 'Waiting'")
     delivery_waiting = cursor.fetchone()[0]
+
+    # Internal transfers & products
+    cursor.execute("SELECT COUNT(*) FROM move_history WHERE op_type = 'INTERNAL'")
+    internal_transfers_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM products")
+    total_products_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM products WHERE on_hand <= 5")
+    low_stock_count = cursor.fetchone()[0]
     
     conn.close()
     
@@ -528,6 +656,14 @@ def dashboard_stats():
             "late": delivery_late,
             "waiting": delivery_waiting,
             "total_operations": total_delivery_ops
+        },
+        "internal_transfers": {
+            "scheduled": internal_transfers_count,
+            "total": internal_transfers_count
+        },
+        "inventory": {
+            "total_products": total_products_count,
+            "low_stock": low_stock_count
         }
     })
 

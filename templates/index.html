@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body class="light-theme">
 
@@ -131,6 +132,7 @@
             <div class="dropdown-menu">
               <a href="#" onclick="navigateTo('receipts', event)"><i class="fa-solid fa-arrow-down-left-and-arrow-up-right-to-center text-teal"></i> Receipts (Inward)</a>
               <a href="#" onclick="navigateTo('deliveries', event)"><i class="fa-solid fa-truck-fast text-purple"></i> Delivery (Outward)</a>
+              <a href="#" onclick="openInternalTransferModal(event)"><i class="fa-solid fa-arrows-left-right text-teal"></i> Internal Transfer &amp; Scrap</a>
               <a href="#" onclick="navigateTo('adjustment', event)"><i class="fa-solid fa-sliders text-amber"></i> Physical Inventory Adjustment</a>
             </div>
           </div>
@@ -294,6 +296,124 @@
 
   <!-- ==================== MODALS ==================== -->
 
+  <!-- A. FORGOT PASSWORD WITH OTP MODAL (PDF Requirement) -->
+  <div id="modal-forgot-password" class="modal-overlay hidden">
+    <div class="modal-container modal-sm">
+      <div class="modal-header" style="background: #FAFAFC; border-bottom: 1px solid #E2E8F0; padding: 18px 24px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 8px; background: #F3E8F0; color: #714B67; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+            <i class="fa-solid fa-key"></i>
+          </div>
+          <div>
+            <h2 style="font-size: 1.15rem; margin: 0; color: #0F172A;">OTP Password Reset</h2>
+            <small style="color: #64748B;">Verify identity via 6-digit OTP code</small>
+          </div>
+        </div>
+        <button class="close-btn" onclick="closeModal('modal-forgot-password')">&times;</button>
+      </div>
+      <form id="form-forgot-password" onsubmit="submitForgotPasswordWithOtp(event)">
+        <div class="modal-body" style="padding: 20px 24px;">
+          <div id="reset-alert-box" class="alert-box error hidden" style="margin-bottom: 12px; font-size: 13px;">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="reset-alert-msg"></span>
+          </div>
+          <div id="reset-success-box" class="alert-box success hidden" style="background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 13px;">
+            <i class="fa-solid fa-circle-check"></i>
+            <span id="reset-success-msg"></span>
+          </div>
+
+          <div class="form-group">
+            <label><i class="fa-solid fa-user"></i> Login ID / Email / Phone</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="reset-user-identifier" placeholder="e.g. admin_odoo or admin@stocksense.com" required style="flex: 1;">
+              <button type="button" class="btn btn-primary btn-sm" id="btn-request-otp" onclick="requestPasswordOtp()">
+                <i class="fa-solid fa-paper-plane"></i> Send OTP
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group" id="otp-group-row">
+            <label><i class="fa-solid fa-shield-halved"></i> 6-Digit OTP Code</label>
+            <input type="text" id="reset-otp-input" placeholder="e.g. 482910 (or use Demo 123456)" maxlength="6" style="font-family: 'JetBrains Mono', monospace; font-size: 16px; letter-spacing: 3px; text-align: center;" required>
+            <small class="field-hint" id="otp-hint-text">Click "Send OTP" to generate demo code</small>
+          </div>
+
+          <div class="form-group">
+            <label><i class="fa-solid fa-lock"></i> New Password</label>
+            <input type="password" id="reset-new-pwd" placeholder="Min 8 characters" required minlength="8">
+          </div>
+
+          <div class="form-group">
+            <label><i class="fa-solid fa-check-double"></i> Confirm New Password</label>
+            <input type="password" id="reset-confirm-pwd" placeholder="Re-enter new password" required minlength="8">
+          </div>
+        </div>
+        <div class="modal-footer" style="background: #FAFAFC; border-top: 1px solid #E2E8F0; padding: 14px 24px;">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-forgot-password')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Reset Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- B. INTERNAL TRANSFER & SCRAP MODAL (PDF Requirement 4) -->
+  <div id="modal-internal-transfer" class="modal-overlay hidden">
+    <div class="modal-container modal-sm">
+      <div class="modal-header" style="background: #FAFAFC; border-bottom: 1px solid #E2E8F0; padding: 18px 24px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 8px; background: #E0F7F6; color: #00A09D; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+            <i class="fa-solid fa-arrows-left-right"></i>
+          </div>
+          <div>
+            <h2 style="font-size: 1.15rem; margin: 0; color: #0F172A;">Internal Transfer / Scrap</h2>
+            <small style="color: #64748B;">Move between racks or write-off damaged stock</small>
+          </div>
+        </div>
+        <button class="close-btn" onclick="closeModal('modal-internal-transfer')">&times;</button>
+      </div>
+      <form id="form-internal-transfer" onsubmit="submitInternalTransfer(event)">
+        <div class="modal-body" style="padding: 20px 24px;">
+          <div class="form-group">
+            <label><i class="fa-solid fa-tag"></i> Movement Type</label>
+            <select id="transfer-type-select" class="form-control" style="width: 100%; border: 1px solid #CBD5E1; border-radius: 6px; padding: 9px;" onchange="handleTransferTypeChange()">
+              <option value="INTERNAL">Internal Transfer: Main Store → Production Rack</option>
+              <option value="SCRAP">Scrap / Damaged Product (Deduct from Stock)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label><i class="fa-solid fa-box"></i> Select Product</label>
+            <select id="transfer-prod-select" class="form-control" style="width: 100%; border: 1px solid #CBD5E1; border-radius: 6px; padding: 9px;" required>
+              <!-- Populated via JS -->
+            </select>
+          </div>
+          <div class="form-group" id="from-loc-group">
+            <label><i class="fa-solid fa-location-dot"></i> Source Rack (From)</label>
+            <select id="transfer-from-loc" class="form-control" style="width: 100%; border: 1px solid #CBD5E1; border-radius: 6px; padding: 9px;">
+              <option value="WH/Stock1">Main Storage Rack (WH/Stock1)</option>
+              <option value="WH/Stock2">Secondary Rack (WH/Stock2)</option>
+              <option value="Production Rack">Production Floor (Production Rack)</option>
+            </select>
+          </div>
+          <div class="form-group" id="to-loc-group">
+            <label><i class="fa-solid fa-arrow-right-to-bracket"></i> Destination Rack (To)</label>
+            <select id="transfer-to-loc" class="form-control" style="width: 100%; border: 1px solid #CBD5E1; border-radius: 6px; padding: 9px;">
+              <option value="Production Rack">Production Floor (Production Rack)</option>
+              <option value="WH/Stock2">Secondary Rack (WH/Stock2)</option>
+              <option value="WH/Stock1">Main Storage Rack (WH/Stock1)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label><i class="fa-solid fa-arrow-down-1-9"></i> Quantity to Transfer</label>
+            <input type="number" id="transfer-quantity" value="5" min="1" required style="width: 100%; border: 1px solid #CBD5E1; border-radius: 6px; padding: 9px;">
+          </div>
+        </div>
+        <div class="modal-footer" style="background: #FAFAFC; border-top: 1px solid #E2E8F0; padding: 14px 24px;">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-internal-transfer')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-transfer"><i class="fa-solid fa-check"></i> Execute Transfer</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- E. UPDATE STOCK MODAL -->
   <div id="modal-update-stock" class="modal-overlay hidden">
