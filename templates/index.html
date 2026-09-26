@@ -13,10 +13,111 @@
 </head>
 <body class="light-theme">
 
+  <!-- ==================== HOME / LANDING PAGE ==================== -->
+  <div id="landing-container" class="landing-page">
+    <!-- Navbar -->
+    <header class="landing-navbar">
+      <div class="nav-brand" style="cursor: pointer;" onclick="showLandingPage()">
+        <div class="mini-logo"><i class="fa-solid fa-boxes-stacked"></i></div>
+        <span class="brand-text">StockSense</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <button class="icon-btn" title="Toggle Theme" onclick="toggleTheme()">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+        <button class="btn btn-primary" onclick="openAuthSelectionModal()" style="font-weight: 700; padding: 8px 20px;">
+          <i class="fa-solid fa-right-to-bracket"></i> Sign In
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="landing-hero">
+      <div class="landing-pill-badge">
+        <i class="fa-solid fa-trophy" style="color: #D97706;"></i>
+        <span>Odoo Hackathon 2026 Innovation Submission</span>
+      </div>
+
+      <h1>
+        Next-Gen Modular <br>
+        <span class="text-gradient">Inventory &amp; Warehouse Operations</span>
+      </h1>
+
+      <p>
+        Digitize stock registers, automate double-entry movements, and streamline warehouse fulfillment.
+        Equipped with real-time receipts, delivery orders, internal rack transfers, and instant WebRTC camera barcode scanning.
+      </p>
+
+      <div class="landing-cta-group">
+        <button class="btn-hero-primary" onclick="openAuthSelectionModal()">
+          <span>Launch StockSense</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+        <button class="btn-hero-outline" onclick="quickDemoLogin()">
+          <i class="fa-solid fa-bolt" style="color: #02998C;"></i>
+          <span>Instant Evaluator Demo</span>
+        </button>
+      </div>
+
+      <div class="landing-creator-banner">
+        <i class="fa-solid fa-users-gear" style="color: #714B67; font-size: 1.15rem;"></i>
+        <span>Architected &amp; Engineered by <strong>Anurag Kashyap &amp; Team</strong></span>
+      </div>
+    </section>
+
+    <!-- Core Features Grid -->
+    <section class="landing-features-container">
+      <div class="features-grid">
+        <div class="feature-box">
+          <div class="feature-icon-wrapper feature-icon-receipts">
+            <i class="fa-solid fa-boxes-packing"></i>
+          </div>
+          <h3>Incoming Receipts</h3>
+          <p>Receive goods from vendors, add product lines, and click Validate to automatically increase warehouse stock levels.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-wrapper feature-icon-deliveries">
+            <i class="fa-solid fa-truck-ramp-box"></i>
+          </div>
+          <h3>Outgoing Deliveries</h3>
+          <p>Customer order picking and packing with automatic real-time stock deduction upon delivery dispatch.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-wrapper feature-icon-transfers">
+            <i class="fa-solid fa-arrows-left-right"></i>
+          </div>
+          <h3>Internal Transfers &amp; Scrap</h3>
+          <p>Move goods between Main Store, Production Rack, and Rack B. Write off damaged inventory with reasons into scrap ledger.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-wrapper feature-icon-scanner">
+            <i class="fa-solid fa-barcode"></i>
+          </div>
+          <h3>Live Camera Scanner</h3>
+          <p>Hardware WebRTC camera video scanning with camera flip, image barcode decoding, and instant 1-click SKU test presets.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-wrapper feature-icon-ledger">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+          </div>
+          <h3>Move History Ledger</h3>
+          <p>Color-coded audit log (Green IN, Red OUT) preserving immutable records of every single unit moved across locations.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <!-- AUTH SECTION (Login / Sign Up) -->
-  <div id="auth-container" class="auth-wrapper">
-    <div class="auth-card glass-panel">
-      <div class="auth-brand">
+  <div id="auth-container" class="auth-wrapper hidden">
+    <div class="auth-card glass-panel" style="position: relative;">
+      <button type="button" class="btn btn-outline btn-sm" onclick="showLandingPage()" style="position: absolute; top: 16px; left: 16px; font-size: 11px; padding: 4px 10px;">
+        <i class="fa-solid fa-arrow-left"></i> Home
+      </button>
+      <div class="auth-brand" style="margin-top: 10px;">
         <div class="logo-box">
           <i class="fa-solid fa-boxes-stacked"></i>
         </div>
@@ -241,60 +342,166 @@
       <!-- 6 & 7. WAREHOUSE & LOCATIONS CONFIGURATION VIEW (Modular Cards Component) -->
       {% include 'components/warehouse_locations.html' %}
 
-      <!-- 8. PHYSICAL INVENTORY ADJUSTMENT VIEW -->
-      <section id="view-adjustment" class="view-panel">
-        <div class="view-header">
-          <div>
-            <h1>Physical Inventory Adjustment</h1>
-            <p class="text-muted">Reconcile theoretical system quantities with actual counted warehouse stock</p>
-          </div>
-          <div class="view-actions" style="display: flex; gap: 10px; align-items: center;">
-            <button class="btn btn-primary" onclick="applyAllAdjustments()">
-              <i class="fa-solid fa-check-double"></i> Apply All Adjustments
-            </button>
-            <button class="btn btn-outline" onclick="loadAdjustmentTable()">
-              <i class="fa-solid fa-rotate"></i> Refresh
-            </button>
-          </div>
-        </div>
-
-        <div class="filter-toolbar" style="margin-bottom: 20px;">
-          <div class="search-box" style="position: relative; max-width: 460px;">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input 
-              type="text" 
-              id="adj-search-input" 
-              placeholder="Filter products for stock count reconciliation..." 
-              oninput="filterAdjustmentTable()"
-            >
-          </div>
-        </div>
-
-        <div class="card table-card">
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Product &amp; SKU</th>
-                  <th>Location</th>
-                  <th class="text-right">Theoretical (System)</th>
-                  <th class="text-center" style="width: 180px;">Counted (Physical)</th>
-                  <th class="text-center">Variance (Diff)</th>
-                  <th class="text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody id="adjustment-table-body">
-                <!-- Populated dynamically via JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+      <!-- 8. PHYSICAL INVENTORY ADJUSTMENT VIEW (Modular Component) -->
+      {% include 'components/inventory_adjustment.html' %}
 
     </main>
   </div>
 
-  <!-- ==================== MODALS ==================== -->
+  <!-- ==================== AUTH SELECTION & PROVIDER MODALS ==================== -->
+
+  <!-- 1. 3-WAY SIGN IN SELECTION MODAL -->
+  <div id="modal-auth-options" class="modal-overlay hidden">
+    <div class="modal-container modal-sm" style="max-width: 440px;">
+      <div class="modal-header" style="background: #FAFAFC; border-bottom: 1px solid #E2E8F0; padding: 18px 24px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 8px; background: #F3E8F0; color: #714B67; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <h2 style="font-size: 1.15rem; margin: 0; color: #0F172A;">Sign In to StockSense</h2>
+            <small style="color: #64748B;">Choose your authentication method</small>
+          </div>
+        </div>
+        <button class="close-btn" onclick="closeModal('modal-auth-options')">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="auth-options-list">
+          <!-- Option 1: Odoo / StockSense ID -->
+          <button type="button" class="btn-auth-provider provider-odoo" onclick="selectAuthMethod('odoo')">
+            <div class="provider-icon">
+              <i class="fa-solid fa-boxes-stacked"></i>
+            </div>
+            <div class="provider-info">
+              <div class="provider-title">Continue with Odoo ID</div>
+              <div class="provider-desc">Sign in with Login ID, Email, or Password</div>
+            </div>
+            <i class="fa-solid fa-chevron-right provider-arrow"></i>
+          </button>
+
+          <!-- Option 2: Google / Gmail -->
+          <button type="button" class="btn-auth-provider provider-google" onclick="selectAuthMethod('google')">
+            <div class="provider-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+              </svg>
+            </div>
+            <div class="provider-info">
+              <div class="provider-title">Continue with Google</div>
+              <div class="provider-desc">Instant sign-in with your Gmail profile</div>
+            </div>
+            <i class="fa-solid fa-chevron-right provider-arrow"></i>
+          </button>
+
+          <!-- Option 3: Phone Number -->
+          <button type="button" class="btn-auth-provider provider-phone" onclick="selectAuthMethod('phone')">
+            <div class="provider-icon">
+              <i class="fa-solid fa-mobile-screen-button"></i>
+            </div>
+            <div class="provider-info">
+              <div class="provider-title">Continue with Phone Number</div>
+              <div class="provider-desc">SMS OTP-based mobile authentication</div>
+            </div>
+            <i class="fa-solid fa-chevron-right provider-arrow"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. PHONE NUMBER UNDER DEVELOPMENT NOTIFICATION MODAL -->
+  <div id="modal-phone-notice" class="modal-overlay hidden">
+    <div class="modal-container modal-sm" style="max-width: 430px; text-align: center;">
+      <div class="modal-header" style="justify-content: flex-end; border-bottom: none; padding-bottom: 0;">
+        <button class="close-btn" onclick="closeModal('modal-phone-notice')">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 10px 24px 28px;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: #FEF3C7; color: #D97706; display: inline-flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 16px;">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+        </div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #0F172A; margin-bottom: 8px;">Phone Login Notice</h3>
+        <p style="color: #64748B; font-size: 0.95rem; line-height: 1.55; margin-bottom: 24px;">
+          Sorry for this! Phone Number authentication is currently under development and will be available in the next release.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button type="button" class="btn btn-primary btn-block" onclick="closeModal('modal-phone-notice'); selectAuthMethod('google');">
+            <i class="fa-brands fa-google"></i> Use Google Sign-In
+          </button>
+          <button type="button" class="btn btn-outline btn-block" onclick="closeModal('modal-phone-notice'); selectAuthMethod('odoo');">
+            <i class="fa-solid fa-boxes-stacked"></i> Use Odoo ID Login
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. GOOGLE PROFILE AUTHENTICATION MODAL -->
+  <div id="modal-google-auth" class="modal-overlay hidden">
+    <div class="modal-container modal-sm" style="max-width: 440px;">
+      <div class="modal-header" style="background: #FAFAFC; border-bottom: 1px solid #E2E8F0; padding: 18px 24px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <svg width="24" height="24" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+          </svg>
+          <div>
+            <h2 style="font-size: 1.15rem; margin: 0; color: #0F172A;">Google Authentication</h2>
+            <small style="color: #64748B;">Sign in with your Google account</small>
+          </div>
+        </div>
+        <button class="close-btn" onclick="closeModal('modal-google-auth')">&times;</button>
+      </div>
+      <form id="form-google-auth" onsubmit="submitGoogleAuth(event)">
+        <div class="modal-body" style="padding: 24px;">
+          <p style="font-size: 0.9rem; color: #64748B; margin-bottom: 16px;">
+            Choose a verified account or enter your Gmail address to sign in immediately:
+          </p>
+
+          <!-- Quick Presets -->
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+            <button type="button" class="btn btn-outline" style="justify-content: flex-start; gap: 10px; padding: 10px 14px;" onclick="fillGoogleAuth('anuragkashyap5870@gmail.com', 'Anurag Kashyap')">
+              <i class="fa-solid fa-user-circle text-primary" style="font-size: 1.2rem;"></i>
+              <div style="text-align: left;">
+                <div style="font-weight: 700; font-size: 0.9rem; color: #0F172A;">Anurag Kashyap</div>
+                <div style="font-size: 0.8rem; color: #64748B;">anuragkashyap5870@gmail.com</div>
+              </div>
+            </button>
+            <button type="button" class="btn btn-outline" style="justify-content: flex-start; gap: 10px; padding: 10px 14px;" onclick="fillGoogleAuth('odoo.evaluator@gmail.com', 'Odoo Evaluator')">
+              <i class="fa-solid fa-user-shield text-teal" style="font-size: 1.2rem;"></i>
+              <div style="text-align: left;">
+                <div style="font-weight: 700; font-size: 0.9rem; color: #0F172A;">Odoo Evaluator / Judge</div>
+                <div style="font-size: 0.8rem; color: #64748B;">odoo.evaluator@gmail.com</div>
+              </div>
+            </button>
+          </div>
+
+          <div style="text-align: center; margin: 12px 0; color: #94A3B8; font-size: 0.8rem; position: relative;">
+            <span style="background: #FFF; padding: 0 8px; position: relative; z-index: 1;">OR ENTER GMAIL</span>
+            <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #E2E8F0;"></div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label><i class="fa-solid fa-envelope"></i> Google / Gmail Address</label>
+            <input type="email" id="google-auth-email" placeholder="your.name@gmail.com" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label><i class="fa-solid fa-user"></i> Display Name</label>
+            <input type="text" id="google-auth-name" placeholder="Your Full Name">
+          </div>
+        </div>
+        <div class="modal-footer" style="padding: 16px 24px; background: #F8FAFC; border-top: 1px solid #E2E8F0;">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-google-auth')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-brands fa-google"></i> Continue with Google</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- A. FORGOT PASSWORD WITH OTP MODAL (PDF Requirement) -->
   <div id="modal-forgot-password" class="modal-overlay hidden">

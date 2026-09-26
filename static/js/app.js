@@ -38,30 +38,141 @@ function toggleTheme() {
   }
 }
 
-// --- Authentication ---
+// --- Authentication & Landing Page Flow ---
 async function checkAuth() {
   try {
     const res = await fetch("/api/me");
     const data = await res.json();
-    if (data.authenticated) {
+    if (data.authenticated && data.user) {
       currentUser = data.user;
       showAppView();
     } else {
-      showAuthView();
+      showLandingPage();
     }
   } catch (err) {
-    showAuthView();
+    showLandingPage();
   }
 }
 
+function showLandingPage() {
+  const landing = document.getElementById("landing-container");
+  const auth = document.getElementById("auth-container");
+  const app = document.getElementById("app-container");
+  if (landing) landing.classList.remove("hidden");
+  if (auth) auth.classList.add("hidden");
+  if (app) app.classList.add("hidden");
+}
+
 function showAuthView() {
-  document.getElementById("auth-container").classList.remove("hidden");
-  document.getElementById("app-container").classList.add("hidden");
+  const landing = document.getElementById("landing-container");
+  const auth = document.getElementById("auth-container");
+  const app = document.getElementById("app-container");
+  if (landing) landing.classList.add("hidden");
+  if (auth) auth.classList.remove("hidden");
+  if (app) app.classList.add("hidden");
+}
+
+function openAuthSelectionModal() {
+  openModal("modal-auth-options");
+}
+
+function selectAuthMethod(method) {
+  closeModal("modal-auth-options");
+  if (method === "odoo") {
+    showAuthView();
+  } else if (method === "google") {
+    openModal("modal-google-auth");
+  } else if (method === "phone") {
+    openModal("modal-phone-notice");
+  }
+}
+
+function fillGoogleAuth(email, name) {
+  const emailInput = document.getElementById("google-auth-email");
+  const nameInput = document.getElementById("google-auth-name");
+  if (emailInput) emailInput.value = email;
+  if (nameInput) nameInput.value = name;
+}
+
+async function submitGoogleAuth(e) {
+  if (e) e.preventDefault();
+  const email = (document.getElementById("google-auth-email").value || "").trim();
+  const name = (document.getElementById("google-auth-name").value || "").trim();
+
+  if (!email || !email.includes("@")) {
+    alert("Please enter a valid Gmail / Google email address.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, name })
+    });
+    const data = await res.json();
+    if (data.success && data.user) {
+      currentUser = data.user;
+      closeModal("modal-google-auth");
+      showAppView();
+    } else {
+      alert(data.message || "Google authentication failed. Please try again.");
+    }
+  } catch (err) {
+    console.error("Google Auth Error", err);
+    alert("Failed to communicate with authentication server.");
+  }
+}
+
+async function quickDemoLogin() {
+  // 1-Click evaluator access using verified Admin account
+  try {
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ login_id: "admin_odoo", password: "Admin@123" })
+    });
+    const data = await res.json();
+    if (data.success && data.user) {
+      currentUser = data.user;
+      showAppView();
+    } else {
+      // Fallback Google evaluator demo
+      await submitGoogleAuthQuick("odoo.evaluator@gmail.com", "Odoo Evaluator");
+    }
+  } catch (err) {
+    await submitGoogleAuthQuick("odoo.evaluator@gmail.com", "Odoo Evaluator");
+  }
+}
+
+async function submitGoogleAuthQuick(email, name) {
+  const res = await fetch("/api/auth/google", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, name })
+  });
+  const data = await res.json();
+  if (data.success && data.user) {
+    currentUser = data.user;
+    showAppView();
+  }
+}
+
+async function logoutUser() {
+  try {
+    await fetch("/api/logout", { method: "POST" });
+  } catch (e) {}
+  currentUser = null;
+  showLandingPage();
 }
 
 function showAppView() {
-  document.getElementById("auth-container").classList.add("hidden");
-  document.getElementById("app-container").classList.remove("hidden");
+  const landing = document.getElementById("landing-container");
+  const auth = document.getElementById("auth-container");
+  const app = document.getElementById("app-container");
+  if (landing) landing.classList.add("hidden");
+  if (auth) auth.classList.add("hidden");
+  if (app) app.classList.remove("hidden");
   
   if (currentUser) {
     document.getElementById("user-display-name").textContent = currentUser.full_name || currentUser.login_id;
@@ -74,7 +185,8 @@ function showAppView() {
     if (badgeElem) {
       badgeElem.style.display = (currentUser.cloud || currentUser.cloud_connected) ? "inline-flex" : "none";
     }
-    document.getElementById("user-avatar-initial").textContent = (currentUser.full_name || currentUser.login_id).charAt(0).toUpperCase();
+    const initial = (currentUser.full_name || currentUser.login_id || "A").charAt(0).toUpperCase();
+    document.getElementById("user-avatar-initial").textContent = initial;
   }
 
   loadInitialData();
@@ -1433,7 +1545,7 @@ async function resetDemoData() {
 }
 
 // --- 9. Physical Inventory Adjustment Functions ---
-let adjustmentProducts = [];
+window.adjustmentProducts = window.adjustmentProducts || [];
 
 async function loadAdjustmentTable() {
   try {
