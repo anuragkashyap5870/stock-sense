@@ -1,0 +1,224 @@
+<!-- ==========================================
+     RECEIPTS COMPONENT (Inward Warehouse Ops)
+     Odoo-style Inward Receipts: List & Kanban
+     ========================================== -->
+<section id="view-receipts" class="view-panel">
+  <!-- View Header -->
+  <div class="view-header">
+    <div>
+      <h1>Receipts (Inward Operations)</h1>
+      <p class="text-muted">Receive products into warehouse from vendors and purchase orders</p>
+    </div>
+    <div class="view-actions">
+      <button class="btn btn-primary" onclick="openNewReceiptModal()">
+        <i class="fa-solid fa-plus"></i> NEW
+      </button>
+      <div class="view-mode-toggles">
+        <button class="btn-toggle active" id="receipt-list-btn" onclick="toggleReceiptViewMode('list')" title="List View">
+          <i class="fa-solid fa-list"></i>
+        </button>
+        <button class="btn-toggle" id="receipt-kanban-btn" onclick="toggleReceiptViewMode('kanban')" title="Kanban View">
+          <i class="fa-solid fa-table-columns"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filter Bar -->
+  <div class="filter-toolbar">
+    <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="receipts-search-input" placeholder="Search by Reference (e.g. WH/IN/0001) or Contact..." oninput="loadReceipts()">
+    </div>
+    <div class="filter-actions">
+      <select id="receipts-status-filter" class="form-control-sm" onchange="filterReceiptsByStatus()">
+        <option value="all">All Statuses</option>
+        <option value="Draft">Draft</option>
+        <option value="Ready">Ready</option>
+        <option value="Done">Done</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 1. List View Table -->
+  <div id="receipts-list-container" class="card table-card">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Contact</th>
+            <th>Schedule Date</th>
+            <th>Status</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody id="receipts-table-body">
+          <!-- Populated dynamically via app.js -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 2. Kanban Board View -->
+  <div id="receipts-kanban-container" class="kanban-board hidden">
+    <!-- Draft Column -->
+    <div class="kanban-column" id="kanban-receipt-draft">
+      <div class="kanban-col-header">
+        <span class="col-title"><i class="fa-regular fa-file-lines mr-1"></i> Draft</span>
+        <span class="count-badge" id="count-rcpt-draft">0</span>
+      </div>
+      <div class="kanban-cards-wrapper" id="cards-rcpt-draft"></div>
+    </div>
+
+    <!-- Ready Column -->
+    <div class="kanban-column" id="kanban-receipt-ready">
+      <div class="kanban-col-header header-ready">
+        <span class="col-title"><i class="fa-solid fa-boxes-packing mr-1"></i> Ready</span>
+        <span class="count-badge" id="count-rcpt-ready">0</span>
+      </div>
+      <div class="kanban-cards-wrapper" id="cards-rcpt-ready"></div>
+    </div>
+
+    <!-- Done Column -->
+    <div class="kanban-column" id="kanban-receipt-done">
+      <div class="kanban-col-header header-done">
+        <span class="col-title"><i class="fa-solid fa-circle-check mr-1"></i> Done</span>
+        <span class="count-badge" id="count-rcpt-done">0</span>
+      </div>
+      <div class="kanban-cards-wrapper" id="cards-rcpt-done"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== RECEIPTS MODALS ==================== -->
+
+<!-- Receipt Detail Modal -->
+<div id="modal-receipt-detail" class="modal-overlay hidden">
+  <div class="modal-container modal-lg">
+    <div class="modal-header">
+      <div class="detail-header-title">
+        <span class="title-type">Receipt</span>
+        <h2 id="receipt-modal-ref">WH/IN/0001</h2>
+      </div>
+      
+      <!-- Status Pipeline: Draft -> Ready -> Done -->
+      <div class="status-pipeline">
+        <div class="step-pill" id="pipe-rcpt-draft">Draft</div>
+        <i class="fa-solid fa-angle-right pipe-arrow"></i>
+        <div class="step-pill" id="pipe-rcpt-ready">Ready</div>
+        <i class="fa-solid fa-angle-right pipe-arrow"></i>
+        <div class="step-pill" id="pipe-rcpt-done">Done</div>
+      </div>
+
+      <button class="close-btn" onclick="closeModal('modal-receipt-detail')">&times;</button>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="modal-actions-bar">
+      <button id="btn-rcpt-todo" class="btn btn-primary" onclick="advanceReceiptStatus('Ready')">
+        <i class="fa-solid fa-play"></i> TODO
+      </button>
+      <button id="btn-rcpt-validate" class="btn btn-accent" onclick="advanceReceiptStatus('Done')">
+        <i class="fa-solid fa-check"></i> VALIDATE
+      </button>
+      <button id="btn-rcpt-print" class="btn btn-outline" onclick="printReceiptDoc()">
+        <i class="fa-solid fa-print"></i> PRINT
+      </button>
+      <button id="btn-rcpt-cancel" class="btn btn-outline text-danger" onclick="advanceReceiptStatus('Cancel')">
+        CANCEL
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="info-group">
+          <label>Receive From</label>
+          <div class="info-val" id="receipt-modal-from">Vendor</div>
+        </div>
+        <div class="info-group">
+          <label>Destination Location</label>
+          <div class="info-val" id="receipt-modal-to">WH/Stock1</div>
+        </div>
+        <div class="info-group">
+          <label>Contact</label>
+          <div class="info-val" id="receipt-modal-contact">Azure Interior</div>
+        </div>
+        <div class="info-group">
+          <label>Schedule Date</label>
+          <div class="info-val" id="receipt-modal-date">2026-09-26</div>
+        </div>
+        <div class="info-group">
+          <label>Responsible</label>
+          <div class="info-val" id="receipt-modal-resp">Odoo Administrator</div>
+        </div>
+      </div>
+
+      <div class="sub-table-section mt-4">
+        <div class="section-title-row">
+          <h4>Products in this Receipt</h4>
+        </div>
+        <table class="data-table border-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th class="text-right">Quantity</th>
+            </tr>
+          </thead>
+          <tbody id="receipt-modal-items-tbody">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create New Receipt Modal -->
+<div id="modal-new-receipt" class="modal-overlay hidden">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Create Inward Receipt</h2>
+      <button class="close-btn" onclick="closeModal('modal-new-receipt')">&times;</button>
+    </div>
+    <form id="form-new-receipt" onsubmit="submitNewReceipt(event)">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Receive From (Vendor)</label>
+          <input type="text" id="new-rcpt-from" value="Vendor Dock" required>
+        </div>
+        <div class="form-group">
+          <label>To Location</label>
+          <select id="new-rcpt-to" required>
+            <option value="WH/Stock1">WH/Stock1</option>
+            <option value="WH/Stock2">WH/Stock2</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Contact / Vendor Name</label>
+          <input type="text" id="new-rcpt-contact" placeholder="e.g. Azure Interior" required>
+        </div>
+        <div class="form-group">
+          <label>Schedule Date</label>
+          <input type="date" id="new-rcpt-date" required>
+        </div>
+
+        <div class="items-builder mt-3">
+          <label><strong>Products to Receive:</strong></label>
+          <div id="new-rcpt-items-list" class="items-list-container">
+            <!-- Dynamic item line rows -->
+          </div>
+          <button type="button" class="btn btn-outline btn-sm mt-2" onclick="addReceiptItemLine()">
+            <i class="fa-solid fa-plus"></i> Add Product Line
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-new-receipt')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Create Receipt</button>
+      </div>
+    </form>
+  </div>
+</div>
