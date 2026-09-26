@@ -66,6 +66,14 @@ function showAppView() {
   if (currentUser) {
     document.getElementById("user-display-name").textContent = currentUser.full_name || currentUser.login_id;
     document.getElementById("user-display-email").textContent = currentUser.email || "";
+    const phoneElem = document.getElementById("user-display-phone");
+    if (phoneElem) {
+      phoneElem.textContent = currentUser.phone ? `📱 ${currentUser.phone}` : "";
+    }
+    const badgeElem = document.getElementById("user-cloud-badge");
+    if (badgeElem) {
+      badgeElem.style.display = (currentUser.cloud || currentUser.cloud_connected) ? "inline-flex" : "none";
+    }
     document.getElementById("user-avatar-initial").textContent = (currentUser.full_name || currentUser.login_id).charAt(0).toUpperCase();
   }
 
@@ -182,6 +190,8 @@ function setupFormListeners() {
     e.preventDefault();
     const loginId = document.getElementById("signup-id-input").value.trim();
     const email = document.getElementById("signup-email-input").value.trim();
+    const phoneInput = document.getElementById("signup-phone-input");
+    const phone = phoneInput ? phoneInput.value.trim() : "";
     const password = document.getElementById("signup-pwd-input").value.trim();
     const rePassword = document.getElementById("signup-repwd-input").value.trim();
     const alertBox = document.getElementById("signup-alert");
@@ -191,7 +201,7 @@ function setupFormListeners() {
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ login_id: loginId, email, password, re_password: rePassword })
+        body: JSON.stringify({ login_id: loginId, email, phone, password, re_password: rePassword })
       });
       const data = await res.json();
       if (data.success) {

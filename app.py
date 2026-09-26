@@ -3,6 +3,11 @@ import sqlite3
 from datetime import datetime, date
 from flask import Flask, request, jsonify, render_template, session
 
+try:
+    import supabase_client
+except ImportError:
+    supabase_client = None
+
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.secret_key = "stocksense-super-secret-key-odoo-hackathon"
 DB_PATH = os.path.join(os.path.dirname(__file__), "stocksense.db")
@@ -24,9 +29,14 @@ def init_db(force_reseed=False):
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         full_name TEXT,
+        phone TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN phone TEXT")
+    except Exception:
+        pass
     
     # 2. Warehouses
     cursor.execute("""
@@ -147,8 +157,8 @@ def init_db(force_reseed=False):
     if force_reseed or cursor.fetchone()[0] == 0:
         cursor.execute("SELECT COUNT(*) FROM users")
         if cursor.fetchone()[0] == 0:
-            cursor.execute("INSERT INTO users (login_id, email, password, full_name) VALUES ('admin_odoo', 'admin@stocksense.com', 'Admin@123', 'Odoo Administrator')")
-            cursor.execute("INSERT INTO users (login_id, email, password, full_name) VALUES ('john_doe', 'john@stocksense.com', 'User@1234', 'John Doe')")
+            cursor.execute("INSERT INTO users (login_id, email, password, full_name, phone) VALUES ('admin_odoo', 'admin@stocksense.com', 'Admin@123', 'Odoo Administrator', '+919876543210')")
+            cursor.execute("INSERT INTO users (login_id, email, password, full_name, phone) VALUES ('john_doe', 'john@stocksense.com', 'User@1234', 'John Doe', '+919812345678')")
             cursor.execute("INSERT INTO warehouses (name, short_code, address) VALUES ('Main Warehouse', 'WH', 'Plot 42, Central Logistics Park, Industrial Zone')")
             cursor.execute("INSERT INTO locations (name, short_code, warehouse_code) VALUES ('Stock Shelf 1', 'WH/Stock1', 'WH')")
             cursor.execute("INSERT INTO locations (name, short_code, warehouse_code) VALUES ('Stock Shelf 2', 'WH/Stock2', 'WH')")
@@ -248,40 +258,89 @@ def generate_reference(op_type="IN", warehouse="WH"):
 def index():
     return render_template("index.html")
 
-# --- Authentication APIs ---
+# --- Authentication APIs (Supabase Cloud + Local Hybrid Fallback) ---
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.json or {}
-    login_id = data.get("login_id", "").strip()
+    login_id = (data.get("login_id") or data.get("identifier") or "").strip()
     password = data.get("password", "").strip()
-    
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE login_id = ? AND password = ?", (login_id, password))
-    user = cursor.fetchone()
-    conn.close()
-    
-    if user:
-        session["user_id"] = user["id"]
-        session["login_id"] = user["login_id"]
-        session["full_name"] = user["full_name"] or user["login_id"]
-        session["email"] = user["email"]
+
+    user_data = None
+    cloud_auth = False
+
+    # 1. Supabase Cloud Authentication
+    if supabase_client and supabase_client.is_supabase_enabled():
+        sb_res = supabase_client.supabase_signin(login_id, password)
+        if sb_res.get("success"):
+            sb_user = sb_res["user"]
+            cloud_auth = True
+            # Cache/sync user into local database
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE login_id = ? OR email = ?", (sb_user["login_id"], sb_user["email"]))
+            local_user = cursor.fetchone()
+            if not local_user:
+                cursor.execute(
+                    "INSERT INTO users (login_id, email, password, full_name, phone) VALUES (?, ?, ?, ?, ?)",
+                    (sb_user["login_id"], sb_user["email"], password, sb_user["full_name"], sb_user.get("phone", ""))
+                )
+                conn.commit()
+                user_id = cursor.lastrowid
+            else:
+                user_id = local_user["id"]
+            conn.close()
+
+            user_data = {
+                "id": user_id,
+                "login_id": sb_user["login_id"],
+                "full_name": sb_user["full_name"],
+                "email": sb_user["email"],
+                "phone": sb_user.get("phone", ""),
+                "cloud": True
+            }
+
+    # 2. Local Fallback (supports login by Login ID, Email, or Phone)
+    if not user_data:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM users WHERE (login_id = ? OR email = ? OR phone = ?) AND password = ?",
+            (login_id, login_id, login_id, password)
+        )
+        local_user = cursor.fetchone()
+        conn.close()
+        if local_user:
+            u_dict = dict(local_user)
+            user_data = {
+                "id": u_dict["id"],
+                "login_id": u_dict["login_id"],
+                "full_name": u_dict.get("full_name") or u_dict["login_id"],
+                "email": u_dict["email"],
+                "phone": u_dict.get("phone", ""),
+                "cloud": False
+            }
+
+    if user_data:
+        session["user_id"] = user_data["id"]
+        session["login_id"] = user_data["login_id"]
+        session["full_name"] = user_data["full_name"]
+        session["email"] = user_data["email"]
+        session["phone"] = user_data.get("phone", "")
         return jsonify({
             "success": True,
-            "user": {
-                "id": user["id"],
-                "login_id": user["login_id"],
-                "full_name": user["full_name"] or user["login_id"],
-                "email": user["email"]
-            }
+            "user": user_data,
+            "message": "Authenticated with Supabase Cloud Auth" if user_data.get("cloud") else "Authenticated successfully"
         })
-    return jsonify({"success": False, "message": "Invalid Login Id or Password"}), 401
+
+    return jsonify({"success": False, "message": "Invalid Login Id, Email, Phone, or Password"}), 401
+
 
 @app.route("/api/signup", methods=["POST"])
 def signup():
     data = request.json or {}
     login_id = data.get("login_id", "").strip()
     email = data.get("email", "").strip()
+    phone = data.get("phone", "").strip()
     password = data.get("password", "").strip()
     re_password = data.get("re_password", "").strip()
     
@@ -300,7 +359,14 @@ def signup():
     has_special = any(not c.isalnum() for c in password)
     if len(password) < 8 or not (has_upper and has_lower and has_special):
         return jsonify({"success": False, "message": "Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one special character."}), 400
-        
+
+    cloud_registered = False
+    if supabase_client and supabase_client.is_supabase_enabled():
+        sb_res = supabase_client.supabase_signup(login_id, email, password, login_id.capitalize(), phone)
+        if not sb_res.get("success"):
+            return jsonify({"success": False, "message": sb_res.get("message")}), 400
+        cloud_registered = True
+
     conn = get_db()
     cursor = conn.cursor()
     
@@ -314,8 +380,8 @@ def signup():
         conn.close()
         return jsonify({"success": False, "message": "Email already registered in system."}), 400
         
-    cursor.execute("INSERT INTO users (login_id, email, password, full_name) VALUES (?, ?, ?, ?)",
-                   (login_id, email, password, login_id.capitalize()))
+    cursor.execute("INSERT INTO users (login_id, email, password, full_name, phone) VALUES (?, ?, ?, ?, ?)",
+                   (login_id, email, password, login_id.capitalize(), phone))
     conn.commit()
     user_id = cursor.lastrowid
     conn.close()
@@ -324,12 +390,21 @@ def signup():
     session["login_id"] = login_id
     session["full_name"] = login_id.capitalize()
     session["email"] = email
+    session["phone"] = phone
     
     return jsonify({
         "success": True,
-        "message": "User registered successfully!",
-        "user": {"id": user_id, "login_id": login_id, "full_name": login_id.capitalize(), "email": email}
+        "message": "User registered in Supabase Cloud & Local DB!" if cloud_registered else "User registered successfully!",
+        "user": {
+            "id": user_id,
+            "login_id": login_id,
+            "full_name": login_id.capitalize(),
+            "email": email,
+            "phone": phone,
+            "cloud": cloud_registered
+        }
     })
+
 
 @app.route("/api/reset-password", methods=["POST"])
 def reset_password():
@@ -339,24 +414,35 @@ def reset_password():
     confirm_password = data.get("confirm_password", "").strip()
     
     if not identifier:
-        return jsonify({"success": False, "message": "Login ID or Email is required."}), 400
+        return jsonify({"success": False, "message": "Login ID, Email, or Phone is required."}), 400
     if new_password != confirm_password:
         return jsonify({"success": False, "message": "Passwords do not match."}), 400
     if len(new_password) < 8:
         return jsonify({"success": False, "message": "Password must be at least 8 characters long."}), 400
-        
+
+    cloud_updated = False
+    if supabase_client and supabase_client.is_supabase_enabled():
+        sb_res = supabase_client.supabase_reset_password(identifier, new_password)
+        if sb_res.get("success"):
+            cloud_updated = True
+
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE login_id = ? OR email = ?", (identifier, identifier))
+    cursor.execute("SELECT * FROM users WHERE login_id = ? OR email = ? OR phone = ?", (identifier, identifier, identifier))
     user = cursor.fetchone()
-    if not user:
+    if not user and not cloud_updated:
         conn.close()
-        return jsonify({"success": False, "message": "No account found with provided Login ID or Email."}), 404
+        return jsonify({"success": False, "message": "No account found with provided Login ID, Email, or Phone."}), 404
         
-    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (new_password, user["id"]))
-    conn.commit()
+    if user:
+        cursor.execute("UPDATE users SET password = ? WHERE id = ?", (new_password, user["id"]))
+        conn.commit()
     conn.close()
-    return jsonify({"success": True, "message": "Password successfully updated! You can now log in."})
+    return jsonify({
+        "success": True,
+        "message": "Password successfully updated in Supabase Cloud! You can now log in." if cloud_updated else "Password successfully updated! You can now log in."
+    })
+
 
 @app.route("/api/me")
 def me():
@@ -367,10 +453,13 @@ def me():
                 "id": session["user_id"],
                 "login_id": session["login_id"],
                 "full_name": session["full_name"],
-                "email": session["email"]
+                "email": session["email"],
+                "phone": session.get("phone", ""),
+                "cloud_connected": bool(supabase_client and supabase_client.is_supabase_enabled())
             }
         })
     return jsonify({"authenticated": False})
+
 
 @app.route("/api/logout", methods=["POST"])
 def logout():
