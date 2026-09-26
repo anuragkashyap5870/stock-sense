@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockSense | Modern Odoo Inventory Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="light-theme">
+
+  <!-- AUTH SECTION (Login / Sign Up) -->
+  <div id="auth-container" class="auth-wrapper">
+    <div class="auth-card glass-panel">
+      <div class="auth-brand">
+        <div class="logo-box">
+          <i class="fa-solid fa-boxes-stacked"></i>
+        </div>
+        <h1>StockSense</h1>
+        <p class="auth-subtitle">Intelligent Inventory & Warehouse Operations</p>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" class="auth-form active">
+        <h2>Sign In</h2>
+        <div id="login-alert" class="alert-box error hidden">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span id="login-error-msg">Invalid Login Id or Password</span>
+        </div>
+
+        <div class="form-group">
+          <label for="login-id-input"><i class="fa-solid fa-user"></i> Login ID</label>
+          <input type="text" id="login-id-input" placeholder="Enter Login ID (e.g. admin_odoo)" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label for="login-pwd-input"><i class="fa-solid fa-lock"></i> Password</label>
+          <div class="password-wrapper">
+            <input type="password" id="login-pwd-input" placeholder="Enter Password (e.g. Admin@123)" required autocomplete="current-password">
+            <button type="button" class="toggle-pwd-btn" onclick="togglePasswordVisibility('login-pwd-input')"><i class="fa-regular fa-eye"></i></button>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-sign-in" class="btn btn-primary btn-block">
+          <span>SIGN IN</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+
+        <div class="auth-footer-links">
+          <a href="#" onclick="showForgotPassword(event)">Forget Password?</a>
+          <span class="divider">|</span>
+          <a href="#" onclick="switchAuthView('signup', event)">Sign Up</a>
+        </div>
+        
+        <div class="quick-credentials-hint">
+          <small><i class="fa-solid fa-circle-info"></i> Demo: <code>admin_odoo</code> / <code>Admin@123</code></small>
+        </div>
+      </form>
+
+      <!-- Sign Up Form -->
+      <form id="signup-form" class="auth-form">
+        <h2>Create Account</h2>
+        <div id="signup-alert" class="alert-box error hidden">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span id="signup-error-msg"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="signup-id-input"><i class="fa-solid fa-id-badge"></i> Enter Login ID</label>
+          <input type="text" id="signup-id-input" placeholder="6-12 characters unique ID" required minlength="6" maxlength="12">
+          <small class="field-hint">Must be 6–12 characters</small>
+        </div>
+
+        <div class="form-group">
+          <label for="signup-email-input"><i class="fa-solid fa-envelope"></i> Enter Email ID</label>
+          <input type="email" id="signup-email-input" placeholder="your.name@company.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="signup-pwd-input"><i class="fa-solid fa-key"></i> Enter Password</label>
+          <input type="password" id="signup-pwd-input" placeholder="Min 8 chars, 1 uppercase, 1 lowercase, 1 special" required>
+        </div>
+
+        <div class="form-group">
+          <label for="signup-repwd-input"><i class="fa-solid fa-check-double"></i> Re-Enter Password</label>
+          <input type="password" id="signup-repwd-input" placeholder="Confirm your password" required>
+        </div>
+
+        <button type="submit" id="btn-sign-up" class="btn btn-accent btn-block">
+          <span>SIGN UP</span>
+          <i class="fa-solid fa-user-plus"></i>
+        </button>
+
+        <div class="auth-footer-links">
+          <span>Already registered?</span>
+          <a href="#" onclick="switchAuthView('login', event)">Sign In</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APP CONTAINER (Rendered after Login) -->
+  <div id="app-container" class="app-layout hidden">
+
+    <!-- Top Navigation Bar (Matching wireframe) -->
+    <header class="top-navbar">
+      <div class="navbar-left">
+        <div class="nav-brand" onclick="navigateTo('dashboard')">
+          <div class="mini-logo"><i class="fa-solid fa-boxes-stacked"></i></div>
+          <span class="brand-text">StockSense</span>
+        </div>
+
+        <nav class="nav-links">
+          <button id="nav-btn-dashboard" class="nav-item active" onclick="navigateTo('dashboard')">
+            <i class="fa-solid fa-chart-pie"></i> Dashboard
+          </button>
+          
+          <!-- Operations Dropdown -->
+          <div class="nav-dropdown">
+            <button id="nav-btn-operations" class="nav-item dropdown-toggle">
+              <i class="fa-solid fa-arrows-split-up-and-left"></i> Operations <i class="fa-solid fa-chevron-down arrow"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="#" onclick="navigateTo('receipts', event)"><i class="fa-solid fa-arrow-down-left-and-arrow-up-right-to-center text-teal"></i> Receipts (Inward)</a>
+              <a href="#" onclick="navigateTo('deliveries', event)"><i class="fa-solid fa-truck-fast text-purple"></i> Delivery (Outward)</a>
+              <a href="#" onclick="navigateTo('adjustment', event)"><i class="fa-solid fa-sliders text-amber"></i> Physical Inventory Adjustment</a>
+            </div>
+          </div>
+
+          <button id="nav-btn-stock" class="nav-item" onclick="navigateTo('stock')">
+            <i class="fa-solid fa-cubes"></i> Stock
+          </button>
+
+          <button id="nav-btn-moves" class="nav-item" onclick="navigateTo('moves')">
+            <i class="fa-solid fa-clock-rotate-left"></i> Move History
+          </button>
+
+          <!-- Settings Dropdown -->
+          <div class="nav-dropdown">
+            <button id="nav-btn-settings" class="nav-item dropdown-toggle">
+              <i class="fa-solid fa-gear"></i> Settings <i class="fa-solid fa-chevron-down arrow"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="#" onclick="navigateTo('warehouse', event)"><i class="fa-solid fa-warehouse"></i> Warehouse</a>
+              <a href="#" onclick="navigateTo('locations', event)"><i class="fa-solid fa-map-location-dot"></i> Locations</a>
+            </div>
+          </div>
+        </nav>
+      </div>
+
+      <div class="navbar-right">
+        <!-- Live Clock -->
+        <div class="live-clock" id="live-clock">
+          <i class="fa-regular fa-clock"></i> <span>10:30 AM</span>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme" onclick="toggleTheme()">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+
+        <!-- User Profile Avatar (A) -->
+        <div class="user-profile-menu">
+          <div class="user-avatar" id="user-avatar-initial" title="User Profile">A</div>
+          <div class="user-popover">
+            <div class="user-info">
+              <strong id="user-display-name">Administrator</strong>
+              <small id="user-display-email">admin@stocksense.com</small>
+            </div>
+            <hr>
+            <button class="btn btn-outline btn-sm btn-block text-danger" onclick="logoutUser()">
+              <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main class="main-content">
+
+      <!-- 1. DASHBOARD VIEW -->
+      <section id="view-dashboard" class="view-panel active">
+        <div class="view-header">
+          <div>
+            <h1>Operations Overview</h1>
+            <p class="text-muted">Real-time status of Inward and Outward Warehouse Logistics</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-outline" onclick="loadDashboardStats()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+          </div>
+        </div>
+
+        <!-- KPI Stat Cards (Exact match to wireframe) -->
+        <div class="kpi-grid">
+          
+          <!-- Receipts Card -->
+          <div class="kpi-card receipt-kpi-card" onclick="navigateTo('receipts')">
+            <div class="kpi-card-header">
+              <div class="kpi-title-wrap">
+                <div class="icon-circle icon-teal"><i class="fa-solid fa-boxes-packing"></i></div>
+                <div>
+                  <h3>Receipts</h3>
+                  <span class="badge badge-teal">Inward Shipments</span>
+                </div>
+              </div>
+              <i class="fa-solid fa-chevron-right text-muted"></i>
+            </div>
+            
+            <div class="kpi-body">
+              <div class="kpi-stat-item primary">
+                <span class="stat-number text-teal" id="kpi-receipt-to-receive">4</span>
+                <span class="stat-label">to receive</span>
+              </div>
+              
+              <div class="kpi-sub-stats">
+                <div class="kpi-stat-chip chip-late">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <strong id="kpi-receipt-late">1</strong> Late
+                  <span class="tooltip">Schedule Date &lt; Today</span>
+                </div>
+                <div class="kpi-stat-chip chip-ops">
+                  <i class="fa-solid fa-calendar-check"></i>
+                  <strong id="kpi-receipt-ops">6</strong> Operations
+                </div>
+              </div>
+            </div>
+            <div class="kpi-footer">
+              <span>Click to view and validate incoming stock &rarr;</span>
+            </div>
+          </div>
+
+          <!-- Delivery Card -->
+          <div class="kpi-card delivery-kpi-card" onclick="navigateTo('deliveries')">
+            <div class="kpi-card-header">
+              <div class="kpi-title-wrap">
+                <div class="icon-circle icon-purple"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                <div>
+                  <h3>Delivery</h3>
+                  <span class="badge badge-purple">Outward Orders</span>
+                </div>
+              </div>
+              <i class="fa-solid fa-chevron-right text-muted"></i>
+            </div>
+
+            <div class="kpi-body">
+              <div class="kpi-stat-item primary">
+                <span class="stat-number text-purple" id="kpi-delivery-to-deliver">4</span>
+                <span class="stat-label">to Deliver</span>
+              </div>
+
+              <div class="kpi-sub-stats">
+                <div class="kpi-stat-chip chip-late">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <strong id="kpi-delivery-late">1</strong> Late
+                  <span class="tooltip">Schedule Date &lt; Today</span>
+                </div>
+                <div class="kpi-stat-chip chip-waiting">
+                  <i class="fa-solid fa-hourglass-half"></i>
+                  <strong id="kpi-delivery-waiting">2</strong> Waiting
+                  <span class="tooltip">Waiting for stocks</span>
+                </div>
+                <div class="kpi-stat-chip chip-ops">
+                  <i class="fa-solid fa-calendar-check"></i>
+                  <strong id="kpi-delivery-ops">6</strong> Operations
+                </div>
+              </div>
+            </div>
+            <div class="kpi-footer">
+              <span>Click to manage outbound shipments &rarr;</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Quick Summary & Recent Movements -->
+        <div class="dashboard-secondary-grid">
+          <div class="card panel-card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-warehouse text-primary"></i> Warehouse Summary</h3>
+            </div>
+            <div class="warehouse-stats-list" id="warehouse-mini-stats">
+              <div class="wh-stat-row">
+                <span>Default Warehouse:</span>
+                <strong>Main Warehouse (WH)</strong>
+              </div>
+              <div class="wh-stat-row">
+                <span>Primary Receiving Location:</span>
+                <code>WH/Stock1</code>
+              </div>
+              <div class="wh-stat-row">
+                <span>Secondary Storage Location:</span>
+                <code>WH/Stock2</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="card panel-card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-bolt text-amber"></i> Quick Actions</h3>
+            </div>
+            <div class="quick-action-buttons">
+              <button class="btn btn-outline" onclick="openNewReceiptModal()"><i class="fa-solid fa-plus text-teal"></i> New Receipt</button>
+              <button class="btn btn-outline" onclick="openNewDeliveryModal()"><i class="fa-solid fa-plus text-purple"></i> New Delivery</button>
+              <button class="btn btn-outline" onclick="navigateTo('stock')"><i class="fa-solid fa-boxes-stacked"></i> Check Inventory</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. STOCK VIEW (Modular Component by Akash Sahani) -->
+      {% include 'components/stock.html' %}
+
+      <!-- 3. RECEIPTS OPERATIONS VIEW -->
+      <section id="view-receipts" class="view-panel">
+        <div class="view-header">
+          <div>
+            <h1>Receipts (Inward Operations)</h1>
+            <p class="text-muted">Receive products into warehouse from vendors and purchase orders</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-primary" onclick="openNewReceiptModal()"><i class="fa-solid fa-plus"></i> NEW</button>
+            <div class="view-mode-toggles">
+              <button class="btn-toggle active" id="receipt-list-btn" onclick="toggleReceiptViewMode('list')" title="List View"><i class="fa-solid fa-list"></i></button>
+              <button class="btn-toggle" id="receipt-kanban-btn" onclick="toggleReceiptViewMode('kanban')" title="Kanban View"><i class="fa-solid fa-table-columns"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="filter-toolbar">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="receipts-search-input" placeholder="Search by Reference (e.g. WH/IN/0001) or Contact..." oninput="loadReceipts()">
+          </div>
+        </div>
+
+        <!-- List View -->
+        <div id="receipts-list-container" class="card table-card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Reference</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Contact</th>
+                  <th>Schedule Date</th>
+                  <th>Status</th>
+                  <th class="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="receipts-table-body">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Kanban View -->
+        <div id="receipts-kanban-container" class="kanban-board hidden">
+          <div class="kanban-column" id="kanban-receipt-draft">
+            <div class="kanban-col-header">
+              <span class="col-title">Draft</span>
+              <span class="count-badge" id="count-rcpt-draft">0</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="cards-rcpt-draft"></div>
+          </div>
+
+          <div class="kanban-column" id="kanban-receipt-ready">
+            <div class="kanban-col-header header-ready">
+              <span class="col-title">Ready</span>
+              <span class="count-badge" id="count-rcpt-ready">0</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="cards-rcpt-ready"></div>
+          </div>
+
+          <div class="kanban-column" id="kanban-receipt-done">
+            <div class="kanban-col-header header-done">
+              <span class="col-title">Done</span>
+              <span class="count-badge" id="count-rcpt-done">0</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="cards-rcpt-done"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. DELIVERY OPERATIONS VIEW -->
+      <section id="view-deliveries" class="view-panel">
+        <div class="view-header">
+          <div>
+            <h1>Delivery (Outward Operations)</h1>
+            <p class="text-muted">Deliver orders to customers with automated stock availability verification</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-primary" onclick="openNewDeliveryModal()"><i class="fa-solid fa-plus"></i> NEW</button>
+            <div class="view-mode-toggles">
+              <button class="btn-toggle active" id="delivery-list-btn" onclick="toggleDeliveryViewMode('list')" title="List View"><i class="fa-solid fa-list"></i></button>
+              <button class="btn-toggle" id="delivery-kanban-btn" onclick="toggleDeliveryViewMode('kanban')" title="Kanban View"><i class="fa-solid fa-table-columns"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-toolbar">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="deliveries-search-input" placeholder="Search Delivery by Reference or Contact..." oninput="loadDeliveries()">
+          </div>
+        </div>
+
+        <!-- List View -->
+        <div id="deliveries-list-container" class="card table-card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Reference</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Contact</th>
+                  <th>Schedule Date</th>
+                  <th>Status</th>
+                  <th class="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="deliveries-table-body">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Kanban View -->
+        <div id="deliveries-kanban-container" class="kanban-board hidden">
+          <div class="kanban-column">
+            <div class="kanban-col-header">
+              <span class="col-title">Draft</span>
+              <span class="count-badge" id="count-deliv-draft">0</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="cards-deliv-draft"></div>
+          </div>
+
+          <div class="kanban-column">
+            <div class="kanban-col-header header-waiting">
+              <span class="col-title">Waiting (Out of Stock)</span>
+              <span class="count-badge" id="count-deliv-waiting">0</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="cards-deliv-waiting"></div>
+          </div>
+
+          <div class="kanban-column">
+            <div class="kanban-col-header header-ready">
+              <span class="col-title">Ready</span>
+              <span class="count-badge" id="count-deliv-ready">0</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="cards-deliv-ready"></div>
+          </div>
+
+          <div class="kanban-column">
+            <div class="kanban-col-header header-done">
+              <span class="col-title">Done</span>
+              <span class="count-badge" id="count-deliv-done">0</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="cards-deliv-done"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. MOVE HISTORY VIEW (Audit Trail) -->
+      <section id="view-moves" class="view-panel">
+        <div class="view-header">
+          <div>
+            <h1>Move History (Inventory Ledger)</h1>
+            <p class="text-muted">Populates all stock movements done between From & To locations</p>
+          </div>
+          <div class="move-legend">
+            <span class="legend-chip in"><i class="fa-solid fa-circle-arrow-down"></i> IN Moves (Green)</span>
+            <span class="legend-chip out"><i class="fa-solid fa-circle-arrow-up"></i> OUT Moves (Red)</span>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-responsive">
+            <table class="data-table move-history-table">
+              <thead>
+                <tr>
+                  <th>Reference</th>
+                  <th>Date</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Product</th>
+                  <th>Quantity</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="moves-table-body">
+                <!-- Populated via JS with color coding -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. SETTINGS: WAREHOUSE VIEW -->
+      <section id="view-warehouse" class="view-panel">
+        <div class="view-header">
+          <div>
+            <h1>Warehouse Configuration</h1>
+            <p class="text-muted">Manage your primary and secondary warehouses</p>
+          </div>
+          <button class="btn btn-primary" onclick="openNewWarehouseModal()"><i class="fa-solid fa-plus"></i> New Warehouse</button>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Short Code</th>
+                  <th>Address</th>
+                </tr>
+              </thead>
+              <tbody id="warehouse-table-body">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. SETTINGS: LOCATIONS VIEW -->
+      <section id="view-locations" class="view-panel">
+        <div class="view-header">
+          <div>
+            <h1>Warehouse Locations & Rooms</h1>
+            <p class="text-muted">Multiple storage racks, rooms, and inward/outward docks</p>
+          </div>
+          <button class="btn btn-primary" onclick="openNewLocationModal()"><i class="fa-solid fa-plus"></i> New Location</button>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Location Name</th>
+                  <th>Short Code</th>
+                  <th>Warehouse Code</th>
+                </tr>
+              </thead>
+              <tbody id="location-table-body">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. PHYSICAL INVENTORY ADJUSTMENT VIEW -->
+      <section id="view-adjustment" class="view-panel">
+        <div class="view-header">
+          <div>
+            <h1>Inventory Adjustment</h1>
+            <p class="text-muted">Reconcile theoretical stock with counted physical stock</p>
+          </div>
+        </div>
+        <div class="card p-4">
+          <p>Select any item from the <strong>Stock</strong> view to conduct instant stock reconciliation, count verification, and audit updates.</p>
+          <button class="btn btn-primary mt-2" onclick="navigateTo('stock')"><i class="fa-solid fa-cubes"></i> Go to Stock View</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- A. RECEIPT DETAIL / FORM VIEW MODAL (Exact match to wireframe) -->
+  <div id="modal-receipt-detail" class="modal-overlay hidden">
+    <div class="modal-container modal-lg">
+      <div class="modal-header">
+        <div class="detail-header-title">
+          <span class="title-type">Receipt</span>
+          <h2 id="receipt-modal-ref">WH/IN/0001</h2>
+        </div>
+        
+        <!-- Status Pipeline Breadcrumb -->
+        <div class="status-pipeline">
+          <div class="step-pill" id="pipe-rcpt-draft">Draft</div>
+          <i class="fa-solid fa-angle-right pipe-arrow"></i>
+          <div class="step-pill" id="pipe-rcpt-ready">Ready</div>
+          <i class="fa-solid fa-angle-right pipe-arrow"></i>
+          <div class="step-pill" id="pipe-rcpt-done">Done</div>
+        </div>
+
+        <button class="close-btn" onclick="closeModal('modal-receipt-detail')">&times;</button>
+      </div>
+
+      <!-- Action Buttons Row (TODO, Validate, Print, Cancel) -->
+      <div class="modal-actions-bar">
+        <button id="btn-rcpt-todo" class="btn btn-primary" onclick="advanceReceiptStatus('Ready')">
+          <i class="fa-solid fa-play"></i> TODO
+        </button>
+        <button id="btn-rcpt-validate" class="btn btn-accent" onclick="advanceReceiptStatus('Done')">
+          <i class="fa-solid fa-check"></i> VALIDATE
+        </button>
+        <button id="btn-rcpt-print" class="btn btn-outline" onclick="printReceiptDoc()">
+          <i class="fa-solid fa-print"></i> PRINT
+        </button>
+        <button id="btn-rcpt-cancel" class="btn btn-outline text-danger" onclick="advanceReceiptStatus('Cancel')">
+          CANCEL
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid-2">
+          <div class="info-group">
+            <label>Receive From</label>
+            <div class="info-val" id="receipt-modal-from">Vendor</div>
+          </div>
+          <div class="info-group">
+            <label>Destination Location</label>
+            <div class="info-val" id="receipt-modal-to">WH/Stock1</div>
+          </div>
+          <div class="info-group">
+            <label>Contact</label>
+            <div class="info-val" id="receipt-modal-contact">Azure Interior</div>
+          </div>
+          <div class="info-group">
+            <label>Schedule Date</label>
+            <div class="info-val" id="receipt-modal-date">2026-09-26</div>
+          </div>
+          <div class="info-group">
+            <label>Responsible (Auto-filled)</label>
+            <div class="info-val" id="receipt-modal-resp">Odoo Administrator</div>
+          </div>
+        </div>
+
+        <div class="sub-table-section mt-4">
+          <div class="section-title-row">
+            <h4>Products in this Receipt</h4>
+          </div>
+          <table class="data-table border-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th class="text-right">Quantity</th>
+              </tr>
+            </thead>
+            <tbody id="receipt-modal-items-tbody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B. DELIVERY DETAIL / FORM VIEW MODAL -->
+  <div id="modal-delivery-detail" class="modal-overlay hidden">
+    <div class="modal-container modal-lg">
+      <div class="modal-header">
+        <div class="detail-header-title">
+          <span class="title-type">Delivery Order</span>
+          <h2 id="delivery-modal-ref">WH/OUT/0001</h2>
+        </div>
+
+        <!-- Status Pipeline Breadcrumb: Draft -> Waiting -> Ready -> Done -->
+        <div class="status-pipeline">
+          <div class="step-pill" id="pipe-deliv-draft">Draft</div>
+          <i class="fa-solid fa-angle-right pipe-arrow"></i>
+          <div class="step-pill" id="pipe-deliv-waiting">Waiting</div>
+          <i class="fa-solid fa-angle-right pipe-arrow"></i>
+          <div class="step-pill" id="pipe-deliv-ready">Ready</div>
+          <i class="fa-solid fa-angle-right pipe-arrow"></i>
+          <div class="step-pill" id="pipe-deliv-done">Done</div>
+        </div>
+
+        <button class="close-btn" onclick="closeModal('modal-delivery-detail')">&times;</button>
+      </div>
+
+      <!-- Out of Stock Alert Banner (Excalidraw rule) -->
+      <div id="delivery-stock-alert-banner" class="alert-box error mt-2 mx-4 hidden">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span><strong>STOCK ALERT:</strong> One or more items are out of stock! The affected item line is highlighted in <strong>RED</strong> below. Order held in <em>Waiting</em> status.</span>
+      </div>
+
+      <!-- Action Buttons Row -->
+      <div class="modal-actions-bar">
+        <button id="btn-deliv-check" class="btn btn-outline" onclick="checkDeliveryAvailability()">
+          <i class="fa-solid fa-boxes-stacked"></i> Check Availability
+        </button>
+        <button id="btn-deliv-validate" class="btn btn-accent" onclick="advanceDeliveryStatus('Done')">
+          <i class="fa-solid fa-check"></i> VALIDATE (Ship Order)
+        </button>
+        <button id="btn-deliv-print" class="btn btn-outline" onclick="printDeliveryDoc()">
+          <i class="fa-solid fa-print"></i> PRINT
+        </button>
+        <button id="btn-deliv-cancel" class="btn btn-outline text-danger" onclick="advanceDeliveryStatus('Cancel')">
+          CANCEL
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid-2">
+          <div class="info-group">
+            <label>Delivery Address</label>
+            <div class="info-val" id="delivery-modal-addr">24 Wall Street, NY</div>
+          </div>
+          <div class="info-group">
+            <label>Source Location</label>
+            <div class="info-val" id="delivery-modal-from">WH/Stock1</div>
+          </div>
+          <div class="info-group">
+            <label>Contact Customer</label>
+            <div class="info-val" id="delivery-modal-contact">Azure Interior</div>
+          </div>
+          <div class="info-group">
+            <label>Schedule Date</label>
+            <div class="info-val" id="delivery-modal-date">2026-09-26</div>
+          </div>
+          <div class="info-group">
+            <label>Operation Type</label>
+            <div class="info-val" id="delivery-modal-optype">Delivery Order</div>
+          </div>
+          <div class="info-group">
+            <label>Responsible</label>
+            <div class="info-val" id="delivery-modal-resp">Odoo Administrator</div>
+          </div>
+        </div>
+
+        <div class="sub-table-section mt-4">
+          <div class="section-title-row">
+            <h4>Products in this Delivery</h4>
+          </div>
+          <table class="data-table border-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th class="text-right">Quantity</th>
+                <th>Stock Status</th>
+              </tr>
+            </thead>
+            <tbody id="delivery-modal-items-tbody">
+              <!-- Populated dynamically with red line highlighting for out of stock -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C. CREATE NEW RECEIPT MODAL -->
+  <div id="modal-new-receipt" class="modal-overlay hidden">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2>Create Inward Receipt</h2>
+        <button class="close-btn" onclick="closeModal('modal-new-receipt')">&times;</button>
+      </div>
+      <form id="form-new-receipt" onsubmit="submitNewReceipt(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Receive From (Vendor)</label>
+            <input type="text" id="new-rcpt-from" value="Vendor Dock" required>
+          </div>
+          <div class="form-group">
+            <label>To Location</label>
+            <select id="new-rcpt-to" required>
+              <option value="WH/Stock1">WH/Stock1</option>
+              <option value="WH/Stock2">WH/Stock2</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Contact / Vendor Name</label>
+            <input type="text" id="new-rcpt-contact" placeholder="e.g. Azure Interior" required>
+          </div>
+          <div class="form-group">
+            <label>Schedule Date</label>
+            <input type="date" id="new-rcpt-date" required>
+          </div>
+
+          <div class="items-builder mt-3">
+            <label><strong>Products to Receive:</strong></label>
+            <div id="new-rcpt-items-list" class="items-list-container">
+              <!-- Item lines -->
+            </div>
+            <button type="button" class="btn btn-outline btn-sm mt-2" onclick="addReceiptItemLine()">
+              <i class="fa-solid fa-plus"></i> Add Product Line
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-new-receipt')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Create Receipt</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- D. CREATE NEW DELIVERY MODAL -->
+  <div id="modal-new-delivery" class="modal-overlay hidden">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2>Create Outward Delivery Order</h2>
+        <button class="close-btn" onclick="closeModal('modal-new-delivery')">&times;</button>
+      </div>
+      <form id="form-new-delivery" onsubmit="submitNewDelivery(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Customer Name / Contact</label>
+            <input type="text" id="new-deliv-contact" placeholder="e.g. Deco Addict" required>
+          </div>
+          <div class="form-group">
+            <label>Delivery Address</label>
+            <input type="text" id="new-deliv-addr" placeholder="e.g. 77 Sunset Blvd, LA" required>
+          </div>
+          <div class="form-group">
+            <label>Source Location</label>
+            <select id="new-deliv-from" required>
+              <option value="WH/Stock1">WH/Stock1</option>
+              <option value="WH/Stock2">WH/Stock2</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Schedule Date</label>
+            <input type="date" id="new-deliv-date" required>
+          </div>
+
+          <div class="items-builder mt-3">
+            <label><strong>Products to Deliver:</strong></label>
+            <div id="new-deliv-items-list" class="items-list-container">
+              <!-- Item lines -->
+            </div>
+            <button type="button" class="btn btn-outline btn-sm mt-2" onclick="addDeliveryItemLine()">
+              <i class="fa-solid fa-plus"></i> Add Product Line
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-new-delivery')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Create Delivery Order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- E. UPDATE STOCK MODAL -->
+  <div id="modal-update-stock" class="modal-overlay hidden">
+    <div class="modal-container modal-sm">
+      <div class="modal-header">
+        <h2>Update Stock</h2>
+        <button class="close-btn" onclick="closeModal('modal-update-stock')">&times;</button>
+      </div>
+      <form id="form-update-stock" onsubmit="submitUpdateStock(event)">
+        <div class="modal-body">
+          <input type="hidden" id="update-stock-pid">
+          <div class="form-group">
+            <label>Product Name</label>
+            <input type="text" id="update-stock-pname" readonly class="input-readonly">
+          </div>
+          <div class="form-group">
+            <label>On Hand Quantity</label>
+            <input type="number" id="update-stock-onhand" min="0" required>
+          </div>
+          <div class="form-group">
+            <label>Free to Use Quantity</label>
+            <input type="number" id="update-stock-freetouse" min="0" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-update-stock')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Stock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- F. ADD PRODUCT MODAL -->
+  <div id="modal-add-product" class="modal-overlay hidden">
+    <div class="modal-container modal-sm">
+      <div class="modal-header">
+        <h2>Add New Product</h2>
+        <button class="close-btn" onclick="closeModal('modal-add-product')">&times;</button>
+      </div>
+      <form id="form-add-product" onsubmit="submitAddProduct(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Product Code / SKU</label>
+            <input type="text" id="new-prod-code" placeholder="e.g. CHR005" required>
+          </div>
+          <div class="form-group">
+            <label>Product Name</label>
+            <input type="text" id="new-prod-name" placeholder="e.g. Conference Table" required>
+          </div>
+          <div class="form-group">
+            <label>Per Unit Cost (Rs)</label>
+            <input type="number" id="new-prod-cost" placeholder="e.g. 4500" required min="1">
+          </div>
+          <div class="form-group">
+            <label>Initial On Hand Quantity</label>
+            <input type="number" id="new-prod-qty" placeholder="e.g. 20" required min="0">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-add-product')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- G. ADD WAREHOUSE MODAL -->
+  <div id="modal-add-warehouse" class="modal-overlay hidden">
+    <div class="modal-container modal-sm">
+      <div class="modal-header">
+        <h2>Add Warehouse</h2>
+        <button class="close-btn" onclick="closeModal('modal-add-warehouse')">&times;</button>
+      </div>
+      <form id="form-add-warehouse" onsubmit="submitAddWarehouse(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Warehouse Name</label>
+            <input type="text" id="new-wh-name" placeholder="e.g. South Logistics Center" required>
+          </div>
+          <div class="form-group">
+            <label>Short Code</label>
+            <input type="text" id="new-wh-code" placeholder="e.g. WH-SOUTH" required>
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <input type="text" id="new-wh-addr" placeholder="e.g. 50 Harbor Way, Bay City" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-add-warehouse')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Warehouse</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- H. ADD LOCATION MODAL -->
+  <div id="modal-add-location" class="modal-overlay hidden">
+    <div class="modal-container modal-sm">
+      <div class="modal-header">
+        <h2>Add Warehouse Location</h2>
+        <button class="close-btn" onclick="closeModal('modal-add-location')">&times;</button>
+      </div>
+      <form id="form-add-location" onsubmit="submitAddLocation(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Location Name</label>
+            <input type="text" id="new-loc-name" placeholder="e.g. High Bay Aisle 4" required>
+          </div>
+          <div class="form-group">
+            <label>Short Code</label>
+            <input type="text" id="new-loc-code" placeholder="e.g. WH/Stock3" required>
+          </div>
+          <div class="form-group">
+            <label>Warehouse</label>
+            <input type="text" id="new-loc-wh" value="WH" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-add-location')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Location</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PRINTABLE INVOICE / SLIP CONTAINER (Hidden until window.print()) -->
+  <div id="printable-receipt-area" class="print-only">
+    <div class="print-slip">
+      <div class="print-header">
+        <h1>StockSense</h1>
+        <div class="slip-type" id="print-slip-type">INVENTORY RECEIPT SLIP</div>
+      </div>
+      <hr>
+      <div class="print-meta-grid">
+        <div><strong>Reference:</strong> <span id="print-ref">WH/IN/0001</span></div>
+        <div><strong>Date:</strong> <span id="print-date">2026-09-26</span></div>
+        <div><strong>Status:</strong> <span id="print-status">DONE</span></div>
+        <div><strong>Responsible:</strong> <span id="print-resp">Odoo Administrator</span></div>
+        <div><strong>From:</strong> <span id="print-from">Vendor</span></div>
+        <div><strong>To:</strong> <span id="print-to">WH/Stock1</span></div>
+      </div>
+      <hr>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Product Name</th>
+            <th class="text-right">Quantity</th>
+          </tr>
+        </thead>
+        <tbody id="print-items-tbody"></tbody>
+      </table>
+      <div class="print-footer">
+        <p>Verified & Authorized Warehouse System Record &bull; StockSense Inventory</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
