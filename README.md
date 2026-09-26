@@ -104,11 +104,8 @@ stocksense/
    python app.py
    ```
 
-4. **Access the application:**
-   Open your browser and navigate to:
-   ```text
-   http://127.0.0.1:5000
-   ```
+
+   ``
 
 ### Default Credentials
 - **Username:** `admin_odoo`
@@ -123,6 +120,7 @@ stocksense/
 - **Anurag Kashyap** — Backend Architecture, SQLite Schema, API Endpoints, System Integration
 - **Akash Sahani** — Frontend Operations, Inventory Adjustment, Stock Tracking & Warehouse Cards
 - **Ankit Kumar** — Dashboard Analytics, Movement Ledger, Barcode Scanner & UI Components
+- **Aditya kumar gupta** — UI designer ,video drafter and repo manager.
 
 ---
 
