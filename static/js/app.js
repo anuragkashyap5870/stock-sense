@@ -98,9 +98,52 @@ function togglePasswordVisibility(inputId) {
   }
 }
 
+function openForgotPasswordModal(e) {
+  if (e) e.preventDefault();
+  const alertBox = document.getElementById("reset-alert-box");
+  if (alertBox) alertBox.classList.add("hidden");
+  const form = document.getElementById("form-forgot-password");
+  if (form) form.reset();
+  openModal("modal-forgot-password");
+}
+
 function showForgotPassword(e) {
+  openForgotPasswordModal(e);
+}
+
+async function submitForgotPassword(e) {
   e.preventDefault();
-  alert("Password reset instructions have been dispatched to administrator mail. For instant test access, use login 'admin_odoo' and password 'Admin@123'.");
+  const identifier = document.getElementById("reset-user-identifier").value.trim();
+  const password = document.getElementById("reset-new-pwd").value.trim();
+  const confirmPassword = document.getElementById("reset-confirm-pwd").value.trim();
+  const alertBox = document.getElementById("reset-alert-box");
+  const alertMsg = document.getElementById("reset-alert-msg");
+
+  if (password !== confirmPassword) {
+    alertMsg.textContent = "Passwords do not match.";
+    alertBox.classList.remove("hidden");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier, password, confirm_password: confirmPassword })
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeModal("modal-forgot-password");
+      alert("✅ " + data.message);
+      document.getElementById("login-id-input").value = identifier;
+    } else {
+      alertMsg.textContent = data.message || "Failed to reset password.";
+      alertBox.classList.remove("hidden");
+    }
+  } catch (err) {
+    alertMsg.textContent = "Error communicating with server.";
+    alertBox.classList.remove("hidden");
+  }
 }
 
 function setupFormListeners() {

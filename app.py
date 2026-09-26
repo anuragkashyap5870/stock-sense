@@ -318,6 +318,33 @@ def signup():
         "user": {"id": user_id, "login_id": login_id, "full_name": login_id.capitalize(), "email": email}
     })
 
+@app.route("/api/reset-password", methods=["POST"])
+def reset_password():
+    data = request.json or {}
+    identifier = data.get("identifier", "").strip()
+    new_password = data.get("password", "").strip()
+    confirm_password = data.get("confirm_password", "").strip()
+    
+    if not identifier:
+        return jsonify({"success": False, "message": "Login ID or Email is required."}), 400
+    if new_password != confirm_password:
+        return jsonify({"success": False, "message": "Passwords do not match."}), 400
+    if len(new_password) < 8:
+        return jsonify({"success": False, "message": "Password must be at least 8 characters long."}), 400
+        
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE login_id = ? OR email = ?", (identifier, identifier))
+    user = cursor.fetchone()
+    if not user:
+        conn.close()
+        return jsonify({"success": False, "message": "No account found with provided Login ID or Email."}), 404
+        
+    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (new_password, user["id"]))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "message": "Password successfully updated! You can now log in."})
+
 @app.route("/api/me")
 def me():
     if "user_id" in session:

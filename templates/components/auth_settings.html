@@ -1,0 +1,269 @@
+<!-- ==========================================
+     StockSense - Component: Auth & Settings
+     Assigned to: Team Leader (Member 1)
+     Features: Login, Sign Up, Forgot Password, 
+               Warehouse Settings & Location Settings
+     ========================================== -->
+
+<!-- 1. AUTHENTICATION SECTION (Login, Sign-Up & Forgot Password) -->
+<section id="component-auth" class="auth-wrapper">
+  <div class="auth-card glass-panel">
+    
+    <!-- Brand Logo & Header -->
+    <div class="auth-brand">
+      <div class="logo-box">
+        <i class="fa-solid fa-boxes-stacked"></i>
+      </div>
+      <h1>StockSense</h1>
+      <p class="auth-subtitle">Intelligent Warehouse & Inventory Operations</p>
+    </div>
+
+    <!-- A. SIGN IN FORM -->
+    <form id="login-form" class="auth-form active">
+      <h2>Sign In</h2>
+      
+      <!-- Error Alert Box -->
+      <div id="login-alert" class="alert-box error hidden">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="login-error-msg">Invalid Login Id or Password</span>
+      </div>
+
+      <div class="form-group">
+        <label for="login-id-input"><i class="fa-solid fa-user"></i> Login ID</label>
+        <input type="text" id="login-id-input" placeholder="Enter Login ID (e.g. admin_odoo)" required autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label for="login-pwd-input"><i class="fa-solid fa-lock"></i> Password</label>
+        <div class="password-wrapper">
+          <input type="password" id="login-pwd-input" placeholder="Enter Password (e.g. Admin@123)" required autocomplete="current-password">
+          <button type="button" class="toggle-pwd-btn" onclick="togglePasswordVisibility('login-pwd-input')">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" id="btn-sign-in" class="btn btn-primary btn-block">
+        <span>SIGN IN</span>
+        <i class="fa-solid fa-arrow-right"></i>
+      </button>
+
+      <div class="auth-footer-links">
+        <a href="#" onclick="openForgotPasswordModal(event)">Forget Password?</a>
+        <span class="divider">|</span>
+        <a href="#" onclick="switchAuthView('signup', event)">Sign Up</a>
+      </div>
+      
+      <div class="quick-credentials-hint">
+        <small><i class="fa-solid fa-circle-info"></i> Demo: <code>admin_odoo</code> / <code>Admin@123</code></small>
+      </div>
+    </form>
+
+    <!-- B. SIGN UP FORM -->
+    <form id="signup-form" class="auth-form">
+      <h2>Create Account</h2>
+      
+      <div id="signup-alert" class="alert-box error hidden">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="signup-error-msg"></span>
+      </div>
+
+      <div class="form-group">
+        <label for="signup-id-input"><i class="fa-solid fa-id-badge"></i> Enter Login ID</label>
+        <input type="text" id="signup-id-input" placeholder="6-12 characters unique ID" required minlength="6" maxlength="12">
+        <small class="field-hint">Must be 6–12 characters</small>
+      </div>
+
+      <div class="form-group">
+        <label for="signup-email-input"><i class="fa-solid fa-envelope"></i> Enter Email ID</label>
+        <input type="email" id="signup-email-input" placeholder="your.name@company.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="signup-pwd-input"><i class="fa-solid fa-key"></i> Enter Password</label>
+        <input type="password" id="signup-pwd-input" placeholder="Min 8 chars, 1 uppercase, 1 lowercase, 1 special" required>
+      </div>
+
+      <div class="form-group">
+        <label for="signup-repwd-input"><i class="fa-solid fa-check-double"></i> Re-Enter Password</label>
+        <input type="password" id="signup-repwd-input" placeholder="Confirm your password" required>
+      </div>
+
+      <button type="submit" id="btn-sign-up" class="btn btn-accent btn-block">
+        <span>SIGN UP</span>
+        <i class="fa-solid fa-user-plus"></i>
+      </button>
+
+      <div class="auth-footer-links">
+        <span>Already registered?</span>
+        <a href="#" onclick="switchAuthView('login', event)">Sign In</a>
+      </div>
+    </form>
+
+  </div>
+</section>
+
+<!-- C. FORGOT PASSWORD MODAL (Excalidraw Requirement) -->
+<div id="modal-forgot-password" class="modal-overlay hidden">
+  <div class="modal-container modal-sm">
+    <div class="modal-header">
+      <h2><i class="fa-solid fa-key text-primary"></i> Reset Password</h2>
+      <button class="close-btn" onclick="closeModal('modal-forgot-password')">&times;</button>
+    </div>
+    <form id="form-forgot-password" onsubmit="submitForgotPassword(event)">
+      <div class="modal-body">
+        <p class="text-muted" style="font-size:0.85rem; margin-bottom:1rem;">
+          Enter your registered Login ID or Email to configure a new password.
+        </p>
+        
+        <div id="reset-alert-box" class="alert-box error hidden">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span id="reset-alert-msg"></span>
+        </div>
+
+        <div class="form-group">
+          <label>Login ID or Email</label>
+          <input type="text" id="reset-user-identifier" placeholder="e.g. admin_odoo or admin@stocksense.com" required>
+        </div>
+
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" id="reset-new-pwd" placeholder="Min 8 chars with uppercase & symbol" required minlength="8">
+        </div>
+
+        <div class="form-group">
+          <label>Confirm New Password</label>
+          <input type="password" id="reset-confirm-pwd" placeholder="Re-enter new password" required minlength="8">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-forgot-password')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Update Password</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     2. SETTINGS SECTIONS (Warehouse & Locations)
+     ========================================== -->
+
+<!-- WAREHOUSE SETTINGS VIEW -->
+<section id="view-warehouse" class="view-panel">
+  <div class="view-header">
+    <div>
+      <h1>Warehouse Configuration</h1>
+      <p class="text-muted">Manage your primary and secondary distribution centers</p>
+    </div>
+    <button class="btn btn-primary" onclick="openNewWarehouseModal()">
+      <i class="fa-solid fa-plus"></i> New Warehouse
+    </button>
+  </div>
+
+  <div class="card table-card">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Short Code</th>
+            <th>Address</th>
+          </tr>
+        </thead>
+        <tbody id="warehouse-table-body">
+          <!-- Populated dynamically via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- LOCATIONS SETTINGS VIEW -->
+<section id="view-locations" class="view-panel">
+  <div class="view-header">
+    <div>
+      <h1>Warehouse Locations & Racks</h1>
+      <p class="text-muted">Holds internal storage racks, rooms, and inward/outward docks</p>
+    </div>
+    <button class="btn btn-primary" onclick="openNewLocationModal()">
+      <i class="fa-solid fa-plus"></i> New Location
+    </button>
+  </div>
+
+  <div class="card table-card">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Location Name</th>
+            <th>Short Code</th>
+            <th>Warehouse Code</th>
+          </tr>
+        </thead>
+        <tbody id="location-table-body">
+          <!-- Populated dynamically via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- CREATE WAREHOUSE MODAL -->
+<div id="modal-add-warehouse" class="modal-overlay hidden">
+  <div class="modal-container modal-sm">
+    <div class="modal-header">
+      <h2>Add Warehouse</h2>
+      <button class="close-btn" onclick="closeModal('modal-add-warehouse')">&times;</button>
+    </div>
+    <form id="form-add-warehouse" onsubmit="submitAddWarehouse(event)">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Warehouse Name</label>
+          <input type="text" id="new-wh-name" placeholder="e.g. South Logistics Center" required>
+        </div>
+        <div class="form-group">
+          <label>Short Code</label>
+          <input type="text" id="new-wh-code" placeholder="e.g. WH-SOUTH" required>
+        </div>
+        <div class="form-group">
+          <label>Address</label>
+          <input type="text" id="new-wh-addr" placeholder="e.g. 50 Harbor Way, Bay City" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-add-warehouse')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Warehouse</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- CREATE LOCATION MODAL -->
+<div id="modal-add-location" class="modal-overlay hidden">
+  <div class="modal-container modal-sm">
+    <div class="modal-header">
+      <h2>Add Location</h2>
+      <button class="close-btn" onclick="closeModal('modal-add-location')">&times;</button>
+    </div>
+    <form id="form-add-location" onsubmit="submitAddLocation(event)">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Location Name</label>
+          <input type="text" id="new-loc-name" placeholder="e.g. Storage Shelf Room B" required>
+        </div>
+        <div class="form-group">
+          <label>Short Code</label>
+          <input type="text" id="new-loc-code" placeholder="e.g. WH/Stock3" required>
+        </div>
+        <div class="form-group">
+          <label>Warehouse</label>
+          <input type="text" id="new-loc-wh" value="WH" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-add-location')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Location</button>
+      </div>
+    </form>
+  </div>
+</div>
