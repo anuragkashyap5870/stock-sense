@@ -425,6 +425,113 @@ def signup():
     })
 
 
+@app.route("/api/me", methods=["GET"])
+def get_current_user():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"authenticated": False, "user": None})
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, login_id, email, full_name, phone FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if user:
+        u_dict = dict(user)
+        u_dict["avatar"] = session.get("avatar") or f"https://api.dicebear.com/7.x/initials/svg?seed={u_dict.get('full_name') or u_dict.get('login_id')}"
+        u_dict["auth_provider"] = session.get("auth_provider", "odoo")
+        u_dict["cloud"] = bool(supabase_client and supabase_client.is_supabase_enabled())
+        return jsonify({"authenticated": True, "user": u_dict})
+    
+    return jsonify({"authenticated": False, "user": None})
+
+
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    user_identifier = session.get("email") or session.get("login_id")
+    if user_identifier and supabase_client and supabase_client.is_supabase_enabled():
+        try:
+            supabase_client.supabase_log_activity(
+                user_identifier=user_identifier,
+                action="LOGOUT",
+                description=f"User {user_identifier} signed out",
+                ip_address=request.remote_addr
+            )
+        except Exception:
+            pass
+    session.clear()
+    return jsonify({"success": True, "message": "Signed out successfully"})
+
+
+@app.route("/api/auth/google", methods=["POST"])
+def google_auth():
+    data = request.json or {}
+    email = data.get("email", "").strip()
+    name = data.get("name", "").strip() or (email.split("@")[0].capitalize() if "@" in email else "Google User")
+    avatar = data.get("picture", "").strip()
+    
+    if not email or "@" not in email:
+        return jsonify({"success": False, "message": "Valid Google Email address is required."}), 400
+        
+    login_id = email.split("@")[0].lower().replace(".", "_")[:12]
+    if len(login_id) < 6:
+        login_id = f"{login_id}_odoo"[:12]
+        
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE email = ? OR login_id = ?", (email, login_id))
+    user = cursor.fetchone()
+    
+    if not user:
+        default_pwd = f"Google@{datetime.now().year}!"
+        cursor.execute(
+            "INSERT INTO users (login_id, email, password, full_name, phone) VALUES (?, ?, ?, ?, ?)",
+            (login_id, email, default_pwd, name, "Google Verified")
+        )
+        conn.commit()
+        user_id = cursor.lastrowid
+    else:
+        user_id = user["id"]
+        login_id = user["login_id"]
+        name = user["full_name"] or name
+    conn.close()
+    
+    session["user_id"] = user_id
+    session["login_id"] = login_id
+    session["full_name"] = name
+    session["email"] = email
+    session["phone"] = "Google Account"
+    session["avatar"] = avatar
+    session["auth_provider"] = "google"
+    
+    if supabase_client and supabase_client.is_supabase_enabled():
+        try:
+            supabase_client.supabase_log_activity(
+                user_identifier=email,
+                action="GOOGLE_LOGIN",
+                description=f"User signed in via Google: {name} ({email})",
+                metadata={"email": email, "name": name, "provider": "google"},
+                ip_address=request.remote_addr
+            )
+        except Exception:
+            pass
+        
+    return jsonify({
+        "success": True,
+        "message": f"Welcome, {name}! Successfully authenticated via Google.",
+        "user": {
+            "id": user_id,
+            "login_id": login_id,
+            "full_name": name,
+            "email": email,
+            "avatar": avatar,
+            "auth_provider": "google",
+            "cloud": bool(supabase_client and supabase_client.is_supabase_enabled())
+        }
+    })
+
+
 @app.route("/api/send-otp", methods=["POST"])
 def send_otp():
     import random
@@ -580,28 +687,6 @@ def internal_transfers():
     conn.close()
     return jsonify(transfers)
 
-
-@app.route("/api/me")
-def me():
-    if "user_id" in session:
-        return jsonify({
-            "authenticated": True,
-            "user": {
-                "id": session["user_id"],
-                "login_id": session["login_id"],
-                "full_name": session["full_name"],
-                "email": session["email"],
-                "phone": session.get("phone", ""),
-                "cloud_connected": bool(supabase_client and supabase_client.is_supabase_enabled())
-            }
-        })
-    return jsonify({"authenticated": False})
-
-
-@app.route("/api/logout", methods=["POST"])
-def logout():
-    session.clear()
-    return jsonify({"success": True})
 
 # --- Dashboard KPIs API ---
 @app.route("/api/dashboard/stats")
