@@ -61,6 +61,16 @@ function showLandingPage() {
   if (landing) landing.classList.remove("hidden");
   if (auth) auth.classList.add("hidden");
   if (app) app.classList.add("hidden");
+
+  const btnSignin = document.getElementById("landing-btn-signin");
+  const btnApp = document.getElementById("landing-btn-app");
+  if (currentUser) {
+    if (btnSignin) btnSignin.classList.add("hidden");
+    if (btnApp) btnApp.classList.remove("hidden");
+  } else {
+    if (btnSignin) btnSignin.classList.remove("hidden");
+    if (btnApp) btnApp.classList.add("hidden");
+  }
 }
 
 function showAuthView() {
