@@ -241,7 +241,10 @@ function navigateTo(viewName, e) {
   if (activeBtn) activeBtn.classList.add("active");
 
   // Trigger loads based on view
-  if (viewName === "dashboard") loadDashboardStats();
+  if (viewName === "dashboard") {
+    loadDashboardStats();
+    if (typeof initDashboardChart === "function") setTimeout(initDashboardChart, 100);
+  }
   if (viewName === "stock") loadStockTable();
   if (viewName === "receipts") loadReceipts();
   if (viewName === "deliveries") loadDeliveries();

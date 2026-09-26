@@ -1,0 +1,836 @@
+<!-- ==============================================================================
+  StockSense - Modular Inventory Management System
+  Component: Warehouse & Locations Management (Modern Odoo Cards Layout)
+  File: templates/components/warehouse_locations.html
+============================================================================== -->
+
+<!-- Google Fonts & Font Awesome Icons -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+  /* ==========================================================================
+     Warehouse & Locations Scoped Theme Styles
+     Theme: #714B67 (Primary Purple), #00A09D (Teal), #F8FAFC (Clean Bg)
+     ========================================================================== */
+
+  .wh-view-container {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #0F172A;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Header Card */
+  .wh-header-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    background: #FFFFFF;
+    padding: 20px 24px;
+    border-radius: 12px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  }
+
+  .wh-header-title-block h1 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .wh-header-title-block h1 i {
+    color: #714B67;
+  }
+
+  .wh-header-title-block p {
+    font-size: 0.85rem;
+    color: #64748B;
+    margin: 4px 0 0 0;
+  }
+
+  /* KPI Mini Summary */
+  .wh-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 14px;
+  }
+
+  .wh-kpi-item {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  .wh-kpi-meta span {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748B;
+    letter-spacing: 0.04em;
+    display: block;
+  }
+
+  .wh-kpi-meta strong {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0F172A;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .wh-kpi-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .wh-kpi-badge.purple { background: #F3E8F0; color: #714B67; }
+  .wh-kpi-badge.teal { background: #E0F7F6; color: #00A09D; }
+  .wh-kpi-badge.green { background: #ECFDF5; color: #10B981; }
+  .wh-kpi-badge.amber { background: #FFFBEB; color: #D97706; }
+
+  /* --------------------------------------------------------------------------
+     Warehouse Cards Grid
+     -------------------------------------------------------------------------- */
+  .wh-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+  }
+
+  .warehouse-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .warehouse-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.08);
+    border-color: #CBD5E1;
+  }
+
+  .wh-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .wh-card-icon-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .wh-icon-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #714B67 0%, #8E5F82 100%);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 2px 6px rgba(113, 75, 103, 0.2);
+    flex-shrink: 0;
+  }
+
+  .wh-name-info h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0F172A;
+  }
+
+  .wh-name-info .wh-code-badge {
+    display: inline-block;
+    background: #F3E8F0;
+    color: #714B67;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+    border: 1px solid #E9D5E4;
+  }
+
+  .wh-status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #ECFDF5;
+    color: #059669;
+    border: 1px solid #A7F3D0;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+  }
+
+  .wh-status-chip .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10B981;
+  }
+
+  .wh-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .wh-address-row {
+    font-size: 13px;
+    color: #64748B;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
+  }
+
+  .wh-address-row i {
+    color: #94A3B8;
+    margin-top: 3px;
+    font-size: 13px;
+  }
+
+  .wh-capacity-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .wh-capacity-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748B;
+  }
+
+  .wh-capacity-track {
+    height: 6px;
+    background: #F1F5F9;
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .wh-capacity-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00A09D 0%, #10B981 100%);
+    border-radius: 9999px;
+  }
+
+  .wh-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border-top: 1px solid #F1F5F9;
+    padding-top: 14px;
+  }
+
+  /* --------------------------------------------------------------------------
+     Location & Rack Visualizer Cards
+     -------------------------------------------------------------------------- */
+  .rack-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 16px;
+  }
+
+  .rack-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.2s ease;
+  }
+
+  .rack-card:hover {
+    transform: translateY(-2px);
+    border-color: #00A09D;
+    box-shadow: 0 6px 12px -2px rgba(0, 160, 157, 0.12);
+  }
+
+  .rack-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .rack-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .rack-icon-internal { background: #E0F7F6; color: #00A09D; }
+  .rack-icon-vendor { background: #F3E8F0; color: #714B67; }
+  .rack-icon-customer { background: #EFF6FF; color: #2563EB; }
+  .rack-icon-scrap { background: #FEF2F2; color: #DC2626; }
+
+  .rack-type-tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .tag-internal { background: #E0F7F6; color: #008784; border: 1px solid #B2EBF2; }
+  .tag-vendor { background: #F3E8F0; color: #714B67; border: 1px solid #E9D5E4; }
+  .tag-customer { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+  .tag-scrap { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+
+  .rack-card-content h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0F172A;
+  }
+
+  .rack-code-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .rack-code-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: #0F172A;
+    background: #F8FAFC;
+    border: 1px solid #CBD5E1;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .rack-wh-tag {
+    font-size: 11px;
+    color: #64748B;
+    font-weight: 600;
+  }
+
+  .rack-shelf-visual {
+    background: #F8FAFC;
+    border: 1px dashed #CBD5E1;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #475569;
+  }
+
+  .rack-shelf-visual strong {
+    color: #0F172A;
+    font-family: 'JetBrains Mono', monospace;
+  }
+</style>
+
+<!-- ==========================================================================
+     6. SETTINGS: WAREHOUSE VIEW (Modern Odoo Cards Layout)
+     ========================================================================== -->
+<section id="view-warehouse" class="view-panel">
+  <div class="wh-view-container">
+
+    <!-- Header Section -->
+    <div class="wh-header-card">
+      <div class="wh-header-title-block">
+        <h1>
+          <i class="fa-solid fa-warehouse"></i>
+          Warehouse Configuration
+        </h1>
+        <p>Manage physical logistics centers, capacity metrics, and multi-location racks</p>
+      </div>
+
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn btn-outline" onclick="loadWarehouses()" title="Refresh">
+          <i class="fa-solid fa-rotate"></i> Refresh
+        </button>
+        <button class="btn btn-primary" onclick="openNewWarehouseModal()">
+          <i class="fa-solid fa-plus"></i> New Warehouse
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Summary Row -->
+    <div class="wh-kpi-row">
+      <div class="wh-kpi-item">
+        <div class="wh-kpi-meta">
+          <span>Active Warehouses</span>
+          <strong id="wh-count-total">2</strong>
+        </div>
+        <div class="wh-kpi-badge purple">
+          <i class="fa-solid fa-building"></i>
+        </div>
+      </div>
+
+      <div class="wh-kpi-item">
+        <div class="wh-kpi-meta">
+          <span>Storage Locations</span>
+          <strong id="wh-count-locs">5</strong>
+        </div>
+        <div class="wh-kpi-badge teal">
+          <i class="fa-solid fa-boxes-stacked"></i>
+        </div>
+      </div>
+
+      <div class="wh-kpi-item">
+        <div class="wh-kpi-meta">
+          <span>Avg. Occupancy</span>
+          <strong id="wh-avg-occupancy">76%</strong>
+        </div>
+        <div class="wh-kpi-badge green">
+          <i class="fa-solid fa-chart-pie"></i>
+        </div>
+      </div>
+
+      <div class="wh-kpi-item">
+        <div class="wh-kpi-meta">
+          <span>Facility Health</span>
+          <strong style="color: #10B981;">100% OK</strong>
+        </div>
+        <div class="wh-kpi-badge green">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Warehouse Cards Grid Container -->
+    <div class="wh-cards-grid" id="warehouse-cards-container">
+      <!-- Populated via loadWarehouses() -->
+      
+      <!-- Card 1 (Default Mock/Hydrated) -->
+      <div class="warehouse-card">
+        <div class="wh-card-top">
+          <div class="wh-card-icon-title">
+            <div class="wh-icon-box"><i class="fa-solid fa-warehouse"></i></div>
+            <div class="wh-name-info">
+              <h3>Main Logistics Hub</h3>
+              <span class="wh-code-badge">WH</span>
+            </div>
+          </div>
+          <span class="wh-status-chip"><span class="dot"></span> Active</span>
+        </div>
+
+        <div class="wh-card-body">
+          <div class="wh-address-row">
+            <i class="fa-solid fa-location-dot"></i>
+            <span>Plot 42, Central Logistics Park, Industrial Zone</span>
+          </div>
+
+          <div class="wh-capacity-bar">
+            <div class="wh-capacity-header">
+              <span>Capacity Utilization</span>
+              <span>74% (3 Racks Active)</span>
+            </div>
+            <div class="wh-capacity-track">
+              <div class="wh-capacity-fill" style="width: 74%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wh-card-footer">
+          <button class="btn btn-outline btn-sm" onclick="navigateTo('locations')">
+            <i class="fa-solid fa-cubes"></i> View Racks
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="openNewLocationModal()">
+            <i class="fa-solid fa-plus"></i> Add Rack
+          </button>
+        </div>
+      </div>
+
+      <!-- Card 2 (Secondary Warehouse) -->
+      <div class="warehouse-card">
+        <div class="wh-card-top">
+          <div class="wh-card-icon-title">
+            <div class="wh-icon-box" style="background: linear-gradient(135deg, #00A09D 0%, #008784 100%);"><i class="fa-solid fa-building-circle-check"></i></div>
+            <div class="wh-name-info">
+              <h3>South Fulfillment Center</h3>
+              <span class="wh-code-badge">WH-SOUTH</span>
+            </div>
+          </div>
+          <span class="wh-status-chip"><span class="dot"></span> Active</span>
+        </div>
+
+        <div class="wh-card-body">
+          <div class="wh-address-row">
+            <i class="fa-solid fa-location-dot"></i>
+            <span>Sector 8, Tech Logistics Corridor, South Terminal</span>
+          </div>
+
+          <div class="wh-capacity-bar">
+            <div class="wh-capacity-header">
+              <span>Capacity Utilization</span>
+              <span>58% (2 Racks Active)</span>
+            </div>
+            <div class="wh-capacity-track">
+              <div class="wh-capacity-fill" style="width: 58%; background: #00A09D;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wh-card-footer">
+          <button class="btn btn-outline btn-sm" onclick="navigateTo('locations')">
+            <i class="fa-solid fa-cubes"></i> View Racks
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="openNewLocationModal()">
+            <i class="fa-solid fa-plus"></i> Add Rack
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ==========================================================================
+     7. SETTINGS: LOCATIONS & RACKS VIEW (Visual Rack Cards)
+     ========================================================================== -->
+<section id="view-locations" class="view-panel">
+  <div class="wh-view-container">
+
+    <!-- Header Section -->
+    <div class="wh-header-card">
+      <div class="wh-header-title-block">
+        <h1>
+          <i class="fa-solid fa-map-location-dot"></i>
+          Warehouse Locations &amp; Racks
+        </h1>
+        <p>Manage internal storage racks, docking bays, customer dispatch, and virtual scrap areas</p>
+      </div>
+
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn btn-outline" onclick="loadLocations()" title="Refresh">
+          <i class="fa-solid fa-rotate"></i> Refresh
+        </button>
+        <button class="btn btn-primary" onclick="openNewLocationModal()">
+          <i class="fa-solid fa-plus"></i> New Location
+        </button>
+      </div>
+    </div>
+
+    <!-- Rack Cards Grid Container -->
+    <div class="rack-cards-grid" id="location-cards-container">
+      <!-- Populated via loadLocations() -->
+      
+      <!-- Rack 1: Stock Shelf 1 -->
+      <div class="rack-card">
+        <div class="rack-card-top">
+          <div class="rack-icon-wrap rack-icon-internal"><i class="fa-solid fa-dolly"></i></div>
+          <span class="rack-type-tag tag-internal">Internal Rack</span>
+        </div>
+        <div class="rack-card-content">
+          <h4>Stock Shelf 1</h4>
+          <div class="rack-code-row">
+            <span class="rack-code-badge">WH/Stock1</span>
+            <span class="rack-wh-tag"><i class="fa-solid fa-warehouse"></i> WH</span>
+          </div>
+        </div>
+        <div class="rack-shelf-visual">
+          <span><i class="fa-solid fa-box"></i> Primary Shelf</span>
+          <strong>Aisle A1</strong>
+        </div>
+      </div>
+
+      <!-- Rack 2: Stock Shelf 2 -->
+      <div class="rack-card">
+        <div class="rack-card-top">
+          <div class="rack-icon-wrap rack-icon-internal"><i class="fa-solid fa-dolly"></i></div>
+          <span class="rack-type-tag tag-internal">Internal Rack</span>
+        </div>
+        <div class="rack-card-content">
+          <h4>Stock Shelf 2</h4>
+          <div class="rack-code-row">
+            <span class="rack-code-badge">WH/Stock2</span>
+            <span class="rack-wh-tag"><i class="fa-solid fa-warehouse"></i> WH</span>
+          </div>
+        </div>
+        <div class="rack-shelf-visual">
+          <span><i class="fa-solid fa-box"></i> Heavy Storage</span>
+          <strong>Aisle B2</strong>
+        </div>
+      </div>
+
+      <!-- Rack 3: Vendor Dock -->
+      <div class="rack-card">
+        <div class="rack-card-top">
+          <div class="rack-icon-wrap rack-icon-vendor"><i class="fa-solid fa-truck-ramp-box"></i></div>
+          <span class="rack-type-tag tag-vendor">Vendor Dock</span>
+        </div>
+        <div class="rack-card-content">
+          <h4>Vendor Inward Dock</h4>
+          <div class="rack-code-row">
+            <span class="rack-code-badge">Vendor</span>
+            <span class="rack-wh-tag"><i class="fa-solid fa-warehouse"></i> Inbound Gate</span>
+          </div>
+        </div>
+        <div class="rack-shelf-visual">
+          <span><i class="fa-solid fa-arrow-down"></i> Receiving Bay</span>
+          <strong>Dock Gate 1</strong>
+        </div>
+      </div>
+
+      <!-- Rack 4: Customer Dispatch Dock -->
+      <div class="rack-card">
+        <div class="rack-card-top">
+          <div class="rack-icon-wrap rack-icon-customer"><i class="fa-solid fa-truck-fast"></i></div>
+          <span class="rack-type-tag tag-customer">Customer Dock</span>
+        </div>
+        <div class="rack-card-content">
+          <h4>Customer Dispatch Dock</h4>
+          <div class="rack-code-row">
+            <span class="rack-code-badge">Customer</span>
+            <span class="rack-wh-tag"><i class="fa-solid fa-warehouse"></i> Outbound Gate</span>
+          </div>
+        </div>
+        <div class="rack-shelf-visual">
+          <span><i class="fa-solid fa-arrow-up"></i> Shipping Bay</span>
+          <strong>Bay 4</strong>
+        </div>
+      </div>
+
+      <!-- Rack 5: Virtual Scrap -->
+      <div class="rack-card">
+        <div class="rack-card-top">
+          <div class="rack-icon-wrap rack-icon-scrap"><i class="fa-solid fa-recycle"></i></div>
+          <span class="rack-type-tag tag-scrap">Virtual Scrap</span>
+        </div>
+        <div class="rack-card-content">
+          <h4>Virtual / Scrap Area</h4>
+          <div class="rack-code-row">
+            <span class="rack-code-badge">Virtual/Scrap</span>
+            <span class="rack-wh-tag"><i class="fa-solid fa-shield"></i> Quarantine</span>
+          </div>
+        </div>
+        <div class="rack-shelf-visual">
+          <span><i class="fa-solid fa-ban"></i> Damage Write-Off</span>
+          <strong>Zone X</strong>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- ==========================================================================
+     WAREHOUSE & LOCATION JAVASCRIPT HANDLERS
+     ========================================================================== -->
+<script>
+  /**
+   * Render Warehouse Cards Dynamically
+   */
+  async function loadWarehouses() {
+    try {
+      const res = await fetch("/api/warehouses");
+      let list = [];
+      if (res.ok) {
+        list = await res.json();
+      }
+
+      if (!list || list.length === 0) {
+        list = [
+          { id: 1, name: "Main Logistics Hub", short_code: "WH", address: "Plot 42, Central Logistics Park, Industrial Zone" },
+          { id: 2, name: "South Fulfillment Center", short_code: "WH-SOUTH", address: "Sector 8, Tech Logistics Corridor, South Terminal" }
+        ];
+      }
+
+      const countTotal = document.getElementById("wh-count-total");
+      if (countTotal) countTotal.textContent = list.length;
+
+      const container = document.getElementById("warehouse-cards-container");
+      if (!container) return;
+
+      container.innerHTML = list.map((w, idx) => `
+        <div class="warehouse-card">
+          <div class="wh-card-top">
+            <div class="wh-card-icon-title">
+              <div class="wh-icon-box" style="${idx % 2 === 1 ? 'background: linear-gradient(135deg, #00A09D 0%, #008784 100%);' : ''}">
+                <i class="fa-solid fa-warehouse"></i>
+              </div>
+              <div class="wh-name-info">
+                <h3>${escapeWhHtml(w.name)}</h3>
+                <span class="wh-code-badge">${escapeWhHtml(w.short_code)}</span>
+              </div>
+            </div>
+            <span class="wh-status-chip"><span class="dot"></span> Active</span>
+          </div>
+
+          <div class="wh-card-body">
+            <div class="wh-address-row">
+              <i class="fa-solid fa-location-dot"></i>
+              <span>${escapeWhHtml(w.address || 'Central Industrial Logistics Zone')}</span>
+            </div>
+
+            <div class="wh-capacity-bar">
+              <div class="wh-capacity-header">
+                <span>Capacity Utilization</span>
+                <span>${70 + (idx * 6)}% Active</span>
+              </div>
+              <div class="wh-capacity-track">
+                <div class="wh-capacity-fill" style="width: ${70 + (idx * 6)}%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wh-card-footer">
+            <button class="btn btn-outline btn-sm" onclick="navigateTo('locations')">
+              <i class="fa-solid fa-cubes"></i> View Racks
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="openNewLocationModal()">
+              <i class="fa-solid fa-plus"></i> Add Rack
+            </button>
+          </div>
+        </div>
+      `).join("");
+
+    } catch (e) {
+      console.warn("Failed to load warehouses from API", e);
+    }
+  }
+
+  /**
+   * Render Location & Rack Cards Dynamically
+   */
+  async function loadLocations() {
+    try {
+      const res = await fetch("/api/locations");
+      let list = [];
+      if (res.ok) {
+        list = await res.json();
+      }
+
+      if (!list || list.length === 0) {
+        list = [
+          { id: 1, name: 'Stock Shelf 1', short_code: 'WH/Stock1', warehouse_code: 'WH' },
+          { id: 2, name: 'Stock Shelf 2', short_code: 'WH/Stock2', warehouse_code: 'WH' },
+          { id: 3, name: 'Vendor Inward Dock', short_code: 'Vendor', warehouse_code: 'WH' },
+          { id: 4, name: 'Customer Dispatch Dock', short_code: 'Customer', warehouse_code: 'WH' },
+          { id: 5, name: 'Virtual / Scrap Area', short_code: 'Virtual/Scrap', warehouse_code: 'WH' }
+        ];
+      }
+
+      const countLocs = document.getElementById("wh-count-locs");
+      if (countLocs) countLocs.textContent = list.length;
+
+      const container = document.getElementById("location-cards-container");
+      if (!container) return;
+
+      container.innerHTML = list.map(l => {
+        const sc = (l.short_code || '').toLowerCase();
+        let tagClass = 'tag-internal';
+        let iconClass = 'rack-icon-internal';
+        let icon = 'fa-dolly';
+        let typeName = 'Internal Rack';
+        let subText = 'Storage Shelf';
+
+        if (sc.includes('vendor')) {
+          tagClass = 'tag-vendor';
+          iconClass = 'rack-icon-vendor';
+          icon = 'fa-truck-ramp-box';
+          typeName = 'Vendor Dock';
+          subText = 'Inward Gate';
+        } else if (sc.includes('customer')) {
+          tagClass = 'tag-customer';
+          iconClass = 'rack-icon-customer';
+          icon = 'fa-truck-fast';
+          typeName = 'Customer Dock';
+          subText = 'Outbound Gate';
+        } else if (sc.includes('scrap') || sc.includes('virtual')) {
+          tagClass = 'tag-scrap';
+          iconClass = 'rack-icon-scrap';
+          icon = 'fa-recycle';
+          typeName = 'Virtual Scrap';
+          subText = 'Quality Quarantine';
+        }
+
+        return `
+          <div class="rack-card">
+            <div class="rack-card-top">
+              <div class="rack-icon-wrap ${iconClass}"><i class="fa-solid ${icon}"></i></div>
+              <span class="rack-type-tag ${tagClass}">${typeName}</span>
+            </div>
+            <div class="rack-card-content">
+              <h4>${escapeWhHtml(l.name)}</h4>
+              <div class="rack-code-row">
+                <span class="rack-code-badge">${escapeWhHtml(l.short_code)}</span>
+                <span class="rack-wh-tag"><i class="fa-solid fa-warehouse"></i> ${escapeWhHtml(l.warehouse_code || 'WH')}</span>
+              </div>
+            </div>
+            <div class="rack-shelf-visual">
+              <span><i class="fa-solid fa-cubes"></i> ${subText}</span>
+              <strong>Active</strong>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+    } catch (e) {
+      console.warn("Failed to load locations from API", e);
+    }
+  }
+
+  function escapeWhHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+  }
+
+  // Self-load on DOM Ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      loadWarehouses();
+      loadLocations();
+    });
+  } else {
+    loadWarehouses();
+    loadLocations();
+  }
+</script>
