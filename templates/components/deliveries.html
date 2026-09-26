@@ -1,0 +1,247 @@
+<!-- ==========================================
+     DELIVERIES COMPONENT (Outward Warehouse Ops)
+     Odoo-style Delivery Orders: List & Kanban
+     ========================================== -->
+<section id="view-deliveries" class="view-panel">
+  <!-- View Header -->
+  <div class="view-header">
+    <div>
+      <h1>Delivery (Outward Operations)</h1>
+      <p class="text-muted">Deliver orders to customers with automated stock availability verification</p>
+    </div>
+    <div class="view-actions">
+      <button class="btn btn-primary" onclick="openNewDeliveryModal()">
+        <i class="fa-solid fa-plus"></i> NEW
+      </button>
+      <div class="view-mode-toggles">
+        <button class="btn-toggle active" id="delivery-list-btn" onclick="toggleDeliveryViewMode('list')" title="List View">
+          <i class="fa-solid fa-list"></i>
+        </button>
+        <button class="btn-toggle" id="delivery-kanban-btn" onclick="toggleDeliveryViewMode('kanban')" title="Kanban View">
+          <i class="fa-solid fa-table-columns"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filter Bar -->
+  <div class="filter-toolbar">
+    <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="deliveries-search-input" placeholder="Search Delivery by Reference or Contact..." oninput="loadDeliveries()">
+    </div>
+    <div class="filter-actions">
+      <select id="deliveries-status-filter" class="form-control-sm" onchange="filterDeliveriesByStatus()">
+        <option value="all">All Statuses</option>
+        <option value="Draft">Draft</option>
+        <option value="Waiting">Waiting (Stock Alert)</option>
+        <option value="Ready">Ready</option>
+        <option value="Done">Done</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 1. List View Table -->
+  <div id="deliveries-list-container" class="card table-card">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Contact</th>
+            <th>Schedule Date</th>
+            <th>Status</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody id="deliveries-table-body">
+          <!-- Populated dynamically via app.js -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 2. Kanban Board View (Draft -> Waiting -> Ready -> Done) -->
+  <div id="deliveries-kanban-container" class="kanban-board hidden">
+    <!-- Draft Column -->
+    <div class="kanban-column">
+      <div class="kanban-col-header">
+        <span class="col-title"><i class="fa-regular fa-file-lines mr-1"></i> Draft</span>
+        <span class="count-badge" id="count-deliv-draft">0</span>
+      </div>
+      <div class="kanban-cards-wrapper" id="cards-deliv-draft"></div>
+    </div>
+
+    <!-- Waiting (Out of Stock Alert) Column -->
+    <div class="kanban-column">
+      <div class="kanban-col-header header-waiting">
+        <span class="col-title"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Waiting</span>
+        <span class="count-badge" id="count-deliv-waiting">0</span>
+      </div>
+      <div class="kanban-cards-wrapper" id="cards-deliv-waiting"></div>
+    </div>
+
+    <!-- Ready Column -->
+    <div class="kanban-column">
+      <div class="kanban-col-header header-ready">
+        <span class="col-title"><i class="fa-solid fa-truck mr-1"></i> Ready</span>
+        <span class="count-badge" id="count-deliv-ready">0</span>
+      </div>
+      <div class="kanban-cards-wrapper" id="cards-deliv-ready"></div>
+    </div>
+
+    <!-- Done Column -->
+    <div class="kanban-column">
+      <div class="kanban-col-header header-done">
+        <span class="col-title"><i class="fa-solid fa-circle-check mr-1"></i> Done</span>
+        <span class="count-badge" id="count-deliv-done">0</span>
+      </div>
+      <div class="kanban-cards-wrapper" id="cards-deliv-done"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== DELIVERIES MODALS ==================== -->
+
+<!-- Delivery Detail Modal -->
+<div id="modal-delivery-detail" class="modal-overlay hidden">
+  <div class="modal-container modal-lg">
+    <div class="modal-header">
+      <div class="detail-header-title">
+        <span class="title-type">Delivery Order</span>
+        <h2 id="delivery-modal-ref">WH/OUT/0001</h2>
+      </div>
+
+      <!-- Status Pipeline: Draft -> Waiting -> Ready -> Done -->
+      <div class="status-pipeline">
+        <div class="step-pill" id="pipe-deliv-draft">Draft</div>
+        <i class="fa-solid fa-angle-right pipe-arrow"></i>
+        <div class="step-pill" id="pipe-deliv-waiting">Waiting</div>
+        <i class="fa-solid fa-angle-right pipe-arrow"></i>
+        <div class="step-pill" id="pipe-deliv-ready">Ready</div>
+        <i class="fa-solid fa-angle-right pipe-arrow"></i>
+        <div class="step-pill" id="pipe-deliv-done">Done</div>
+      </div>
+
+      <button class="close-btn" onclick="closeModal('modal-delivery-detail')">&times;</button>
+    </div>
+
+    <!-- Out of Stock Alert Banner (Odoo red-line availability rule) -->
+    <div id="delivery-stock-alert-banner" class="alert-box error mt-2 mx-4 hidden">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span><strong>STOCK ALERT:</strong> One or more items are out of stock! The affected item line is highlighted in <strong>RED</strong> below. Order held in <em>Waiting</em> status.</span>
+    </div>
+
+    <!-- Action Buttons Row -->
+    <div class="modal-actions-bar">
+      <button id="btn-deliv-check" class="btn btn-outline" onclick="checkDeliveryAvailability()">
+        <i class="fa-solid fa-boxes-stacked"></i> Check Availability
+      </button>
+      <button id="btn-deliv-validate" class="btn btn-accent" onclick="advanceDeliveryStatus('Done')">
+        <i class="fa-solid fa-check"></i> VALIDATE (Ship Order)
+      </button>
+      <button id="btn-deliv-print" class="btn btn-outline" onclick="printDeliveryDoc()">
+        <i class="fa-solid fa-print"></i> PRINT
+      </button>
+      <button id="btn-deliv-cancel" class="btn btn-outline text-danger" onclick="advanceDeliveryStatus('Cancel')">
+        CANCEL
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="info-group">
+          <label>Delivery Address</label>
+          <div class="info-val" id="delivery-modal-addr">24 Wall Street, NY</div>
+        </div>
+        <div class="info-group">
+          <label>Source Location</label>
+          <div class="info-val" id="delivery-modal-from">WH/Stock1</div>
+        </div>
+        <div class="info-group">
+          <label>Contact Customer</label>
+          <div class="info-val" id="delivery-modal-contact">Azure Interior</div>
+        </div>
+        <div class="info-group">
+          <label>Schedule Date</label>
+          <div class="info-val" id="delivery-modal-date">2026-09-26</div>
+        </div>
+        <div class="info-group">
+          <label>Operation Type</label>
+          <div class="info-val" id="delivery-modal-optype">Delivery Order</div>
+        </div>
+        <div class="info-group">
+          <label>Responsible</label>
+          <div class="info-val" id="delivery-modal-resp">Odoo Administrator</div>
+        </div>
+      </div>
+
+      <div class="sub-table-section mt-4">
+        <div class="section-title-row">
+          <h4>Products in this Delivery</h4>
+        </div>
+        <table class="data-table border-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th class="text-right">Quantity</th>
+              <th>Stock Status</th>
+            </tr>
+          </thead>
+          <tbody id="delivery-modal-items-tbody">
+            <!-- Populated dynamically with red line highlighting for out of stock -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create New Delivery Modal -->
+<div id="modal-new-delivery" class="modal-overlay hidden">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Create Outward Delivery Order</h2>
+      <button class="close-btn" onclick="closeModal('modal-new-delivery')">&times;</button>
+    </div>
+    <form id="form-new-delivery" onsubmit="submitNewDelivery(event)">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Customer Name / Contact</label>
+          <input type="text" id="new-deliv-contact" placeholder="e.g. Deco Addict" required>
+        </div>
+        <div class="form-group">
+          <label>Delivery Address</label>
+          <input type="text" id="new-deliv-addr" placeholder="e.g. 77 Sunset Blvd, LA" required>
+        </div>
+        <div class="form-group">
+          <label>Source Location</label>
+          <select id="new-deliv-from" required>
+            <option value="WH/Stock1">WH/Stock1</option>
+            <option value="WH/Stock2">WH/Stock2</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Schedule Date</label>
+          <input type="date" id="new-deliv-date" required>
+        </div>
+
+        <div class="items-builder mt-3">
+          <label><strong>Products to Deliver:</strong></label>
+          <div id="new-deliv-items-list" class="items-list-container">
+            <!-- Dynamic item line rows -->
+          </div>
+          <button type="button" class="btn btn-outline btn-sm mt-2" onclick="addDeliveryItemLine()">
+            <i class="fa-solid fa-plus"></i> Add Product Line
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-new-delivery')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Create Delivery Order</button>
+      </div>
+    </form>
+  </div>
+</div>
