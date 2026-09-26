@@ -625,7 +625,11 @@
       </h1>
       <p>Real-time warehouse stock tracking and availability adjustments</p>
     </div>
-    <div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <button type="button" class="ss-btn ss-btn-secondary" id="btn-transfer-scrap" onclick="openTransferModal()" style="background: white; border: 1px solid var(--ss-border); color: var(--ss-text-main); font-weight: 600; padding: 10px 18px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-arrows-left-right" style="color: var(--ss-accent);"></i>
+        Transfer / Scrap
+      </button>
       <button type="button" class="ss-btn ss-btn-primary" id="btn-new-product" onclick="openNewProductModal()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -1002,6 +1006,59 @@
         </div>
       </form>
     </div>
+  <!-- 6. "Transfer / Scrap" Modal -->
+  <div id="modal-transfer-scrap" class="ss-modal-overlay" onclick="handleStockBackdropClick(event, 'modal-transfer-scrap')">
+    <div class="ss-modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-transfer-title">
+      <div class="ss-modal-header">
+        <h2 id="modal-transfer-title" class="ss-modal-title">Internal Transfer / Scrap</h2>
+        <button type="button" class="ss-modal-close" onclick="closeTransferModal()" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="form-transfer-scrap" onsubmit="handleTransferSubmit(event)">
+        <div class="ss-modal-body">
+          <div class="ss-form-group">
+            <label class="ss-form-label" for="transfer-product-select">Select Product <span class="required">*</span></label>
+            <select id="transfer-product-select" class="ss-form-input" required onchange="updateTransferAvailabilityHint()">
+              <!-- Populated via JS -->
+            </select>
+            <small id="transfer-avail-hint" style="color: var(--ss-text-muted); font-size: 12px; margin-top: 4px; display: block;"></small>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="ss-form-group">
+              <label class="ss-form-label" for="transfer-from-loc">Source Location <span class="required">*</span></label>
+              <select id="transfer-from-loc" class="ss-form-input" required>
+                <option value="WH/Stock1">WH/Stock1 (Main Warehouse)</option>
+                <option value="WH/Stock2">WH/Stock2 (Secondary Rack)</option>
+              </select>
+            </div>
+            <div class="ss-form-group">
+              <label class="ss-form-label" for="transfer-to-loc">Destination Location <span class="required">*</span></label>
+              <select id="transfer-to-loc" class="ss-form-input" required onchange="handleTransferDestChange(this.value)">
+                <option value="WH/Stock2">WH/Stock2 (Secondary Rack)</option>
+                <option value="WH/Stock1">WH/Stock1 (Main Warehouse)</option>
+                <option value="Scrap" style="color: #ef4444; font-weight: bold;">Virtual/Scrap (Damaged Goods)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ss-form-group" style="margin-bottom: 0;">
+            <label class="ss-form-label" for="transfer-qty">Quantity to Move <span class="required">*</span></label>
+            <input type="number" id="transfer-qty" class="ss-form-input" min="1" value="1" required>
+          </div>
+
+          <div id="scrap-warning-box" style="display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 10px; margin-top: 14px; font-size: 13px; color: #991b1b;">
+            <i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i>
+            <strong>Scrap Warning:</strong> Scrapping will permanently deduct units from warehouse inventory.
+          </div>
+        </div>
+
+        <div class="ss-modal-footer">
+          <button type="button" class="ss-btn ss-btn-secondary" onclick="closeTransferModal()">Cancel</button>
+          <button type="submit" id="btn-submit-transfer" class="ss-btn ss-btn-primary">Confirm Transfer</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Notification Toast -->
@@ -1235,6 +1292,7 @@
     if (event.target && event.target.id === modalId) {
       if (modalId === 'modal-update-stock') closeUpdateStockModal();
       if (modalId === 'modal-new-product') closeNewProductModal();
+      if (modalId === 'modal-transfer-scrap') closeTransferModal();
     }
   }
 
@@ -1242,8 +1300,77 @@
     if (event.key === 'Escape') {
       closeUpdateStockModal();
       closeNewProductModal();
+      closeTransferModal();
     }
   });
+
+  // Transfer / Scrap Functions
+  function openTransferModal(selectedProdId) {
+    const sel = document.getElementById('transfer-product-select');
+    if (sel && window.currentProducts) {
+      sel.innerHTML = window.currentProducts.map(p => `
+        <option value="${p.id}" data-free="${p.free_to_use}">${p.name} [Available: ${p.free_to_use}]</option>
+      `).join('');
+      if (selectedProdId) sel.value = selectedProdId;
+      updateTransferAvailabilityHint();
+    }
+    const modal = document.getElementById('modal-transfer-scrap');
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeTransferModal() {
+    const modal = document.getElementById('modal-transfer-scrap');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function updateTransferAvailabilityHint() {
+    const sel = document.getElementById('transfer-product-select');
+    const hint = document.getElementById('transfer-avail-hint');
+    if (!sel || !hint) return;
+    const opt = sel.options[sel.selectedIndex];
+    const free = opt ? opt.getAttribute('data-free') : 0;
+    hint.textContent = `Current available free-to-use stock: ${free} units`;
+  }
+
+  function handleTransferDestChange(val) {
+    const warn = document.getElementById('scrap-warning-box');
+    const btn = document.getElementById('btn-submit-transfer');
+    if (val === 'Scrap') {
+      if (warn) warn.style.display = 'block';
+      if (btn) btn.textContent = 'Confirm Scrap Deduction';
+    } else {
+      if (warn) warn.style.display = 'none';
+      if (btn) btn.textContent = 'Confirm Transfer';
+    }
+  }
+
+  async function handleTransferSubmit(e) {
+    e.preventDefault();
+    const pid = document.getElementById('transfer-product-select').value;
+    const fromLoc = document.getElementById('transfer-from-loc').value;
+    const toLoc = document.getElementById('transfer-to-loc').value;
+    const qty = parseInt(document.getElementById('transfer-qty').value);
+    const isScrap = toLoc === 'Scrap';
+
+    try {
+      const res = await fetch('/api/transfers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: parseInt(pid), from_loc: fromLoc, to_loc: toLoc, quantity: qty, is_scrap: isScrap })
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeTransferModal();
+        showStockToast(isScrap ? `Scrap logged (${data.reference}): -${qty} units` : `Transfer logged (${data.reference})`);
+        if (typeof loadStockTable === 'function') loadStockTable();
+        if (typeof loadMoveHistory === 'function') loadMoveHistory();
+      } else {
+        alert(data.message || 'Transfer failed');
+      }
+    } catch (err) {
+      alert('Error recording transfer');
+    }
+  }
 
   // 5. Toast System
   let toastTimer = null;

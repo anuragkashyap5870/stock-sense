@@ -224,8 +224,12 @@ init_db()
 def generate_reference(op_type="IN", warehouse="WH"):
     conn = get_db()
     cursor = conn.cursor()
-    table = "receipts" if op_type == "IN" else "deliveries"
-    cursor.execute(f"SELECT COUNT(*) FROM {table}")
+    if op_type == "IN":
+        cursor.execute("SELECT COUNT(*) FROM receipts")
+    elif op_type == "OUT":
+        cursor.execute("SELECT COUNT(*) FROM deliveries")
+    else:
+        cursor.execute("SELECT COUNT(*) FROM move_history WHERE op_type IN ('INTERNAL', 'SCRAP', ?)", (op_type,))
     count = cursor.fetchone()[0] + 1
     conn.close()
     return f"{warehouse}/{op_type}/{count:04d}"
@@ -689,6 +693,50 @@ def get_move_history():
     moves = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return jsonify(moves)
+
+# --- Internal Transfers & Scrap Operations ---
+@app.route("/api/transfers", methods=["POST"])
+def create_internal_transfer():
+    data = request.json or {}
+    product_id = data.get("product_id")
+    from_loc = data.get("from_loc", "WH/Stock1")
+    to_loc = data.get("to_loc", "WH/Stock2")
+    qty = int(data.get("quantity", 1))
+    is_scrap = data.get("is_scrap", False)
+
+    if not product_id or qty <= 0:
+        return jsonify({"success": False, "message": "Valid product and positive quantity required"}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM products WHERE id = ?", (product_id,))
+    product = cursor.fetchone()
+    if not product:
+        conn.close()
+        return jsonify({"success": False, "message": "Product not found"}), 404
+
+    if is_scrap or to_loc.lower() == "scrap":
+        if product["free_to_use"] < qty:
+            conn.close()
+            return jsonify({"success": False, "message": f"Insufficient stock to scrap ({product['free_to_use']} available)"}), 400
+        ref = generate_reference(op_type="SCRAP", warehouse="WH")
+        # Scrap permanently removes items from inventory
+        cursor.execute("UPDATE products SET on_hand = on_hand - ?, free_to_use = free_to_use - ? WHERE id = ?",
+                       (qty, qty, product_id))
+        cursor.execute("""
+            INSERT INTO move_history (reference, op_type, date, from_loc, to_loc, product_name, quantity, status)
+            VALUES (?, 'SCRAP', ?, ?, 'Virtual/Scrap', ?, ?, 'Done')
+        """, (ref, date.today().isoformat(), from_loc, product["name"], qty))
+    else:
+        ref = generate_reference(op_type="INT", warehouse="WH")
+        cursor.execute("""
+            INSERT INTO move_history (reference, op_type, date, from_loc, to_loc, product_name, quantity, status)
+            VALUES (?, 'INTERNAL', ?, ?, ?, ?, ?, 'Done')
+        """, (ref, date.today().isoformat(), from_loc, to_loc, product["name"], qty))
+
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "reference": ref, "message": "Transfer logged successfully"})
 
 if __name__ == "__main__":
     print("[INFO] StockSense Odoo Inventory Server running on http://127.0.0.1:5000")
