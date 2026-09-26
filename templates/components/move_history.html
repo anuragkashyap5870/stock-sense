@@ -1,0 +1,1324 @@
+<!-- ==============================================================================
+  StockSense - Modular Inventory Management System
+  Component: Move History (Inventory Ledger)
+  File: templates/components/move_history.html
+  Assigned Module: Inventory Ledger & Audit Trail
+============================================================================== -->
+
+<!-- Google Fonts & Font Awesome Icons -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+  /* ==========================================================================
+     StockSense Move History Ledger Component Styles
+     Theme: Clean Light Theme (Bg: #F8FAFC, Surface: #FFFFFF, Border: #E2E8F0)
+     IN Moves: Green (#10B981)
+     OUT Moves: Red (#EF4444)
+     Primary Brand: #714B67 | Accent: #00A09D
+     ========================================================================== */
+
+  :root {
+    --ss-bg: #F8FAFC;
+    --ss-surface: #FFFFFF;
+    --ss-border: #E2E8F0;
+    --ss-border-subtle: #F1F5F9;
+    --ss-primary: #714B67;
+    --ss-primary-hover: #5D3D55;
+    --ss-primary-light: #FBF7FA;
+    --ss-primary-subtle: #F3E8F0;
+    --ss-accent: #00A09D;
+    --ss-accent-hover: #008784;
+    --ss-accent-light: #E6F6F6;
+    --ss-text-main: #0F172A;
+    --ss-text-muted: #64748B;
+    --ss-text-sub: #475569;
+    --ss-text-light: #94A3B8;
+
+    /* Move Ledger Inbound (IN) - Green */
+    --ss-in-color: #10B981;
+    --ss-in-bg: #ECFDF5;
+    --ss-in-border: #A7F3D0;
+    --ss-in-text: #065F46;
+    --ss-in-hover: #D1FAE5;
+
+    /* Move Ledger Outbound (OUT) - Red */
+    --ss-out-color: #EF4444;
+    --ss-out-bg: #FEF2F2;
+    --ss-out-border: #FECACA;
+    --ss-out-text: #991B1B;
+    --ss-out-hover: #FEE2E2;
+
+    --ss-radius-sm: 6px;
+    --ss-radius-md: 8px;
+    --ss-radius-lg: 12px;
+    --ss-radius-xl: 16px;
+    --ss-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+    --ss-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+    --ss-shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+  }
+
+  #view-moves.view-panel {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--ss-bg);
+    color: var(--ss-text-main);
+    padding: 28px 32px;
+    min-height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  #view-moves * {
+    box-sizing: border-box;
+  }
+
+  /* --------------------------------------------------------------------------
+     1. Header & Title Section
+     -------------------------------------------------------------------------- */
+  .ss-moves-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    background: var(--ss-surface);
+    padding: 20px 24px;
+    border-radius: var(--ss-radius-lg);
+    border: 1px solid var(--ss-border);
+    box-shadow: var(--ss-shadow-sm);
+  }
+
+  .ss-moves-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ss-moves-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .ss-moves-title-group h1 {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--ss-text-main);
+    margin: 0;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .ss-moves-title-group h1 i {
+    color: var(--ss-primary);
+    font-size: 1.35rem;
+  }
+
+  .ss-moves-badge {
+    background: var(--ss-primary-light);
+    color: var(--ss-primary);
+    border: 1px solid var(--ss-primary-subtle);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .ss-moves-subtitle {
+    font-size: 0.88rem;
+    color: var(--ss-text-muted);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Header Legend Chips */
+  .ss-moves-legend {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .ss-legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    transition: all 0.2s ease;
+    user-select: none;
+    box-shadow: var(--ss-shadow-sm);
+  }
+
+  .ss-legend-chip.in {
+    background-color: var(--ss-in-bg);
+    color: var(--ss-in-text);
+    border: 1px solid var(--ss-in-border);
+  }
+
+  .ss-legend-chip.in i {
+    color: var(--ss-in-color);
+    font-size: 0.95rem;
+  }
+
+  .ss-legend-chip.out {
+    background-color: var(--ss-out-bg);
+    color: var(--ss-out-text);
+    border: 1px solid var(--ss-out-border);
+  }
+
+  .ss-legend-chip.out i {
+    color: var(--ss-out-color);
+    font-size: 0.95rem;
+  }
+
+  /* --------------------------------------------------------------------------
+     2. Metrics & KPI Summary Cards
+     -------------------------------------------------------------------------- */
+  .ss-moves-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .ss-kpi-card {
+    background: var(--ss-surface);
+    border: 1px solid var(--ss-border);
+    border-radius: var(--ss-radius-lg);
+    padding: 16px 20px;
+    box-shadow: var(--ss-shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .ss-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ss-shadow-md);
+    border-color: #CBD5E1;
+  }
+
+  .ss-kpi-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ss-kpi-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ss-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .ss-kpi-val {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--ss-text-main);
+    line-height: 1.2;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .ss-kpi-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--ss-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+  }
+
+  .ss-kpi-icon.total {
+    background-color: var(--ss-primary-light);
+    color: var(--ss-primary);
+  }
+
+  .ss-kpi-icon.in {
+    background-color: var(--ss-in-bg);
+    color: var(--ss-in-color);
+  }
+
+  .ss-kpi-icon.out {
+    background-color: var(--ss-out-bg);
+    color: var(--ss-out-color);
+  }
+
+  .ss-kpi-icon.net {
+    background-color: var(--ss-accent-light);
+    color: var(--ss-accent);
+  }
+
+  /* --------------------------------------------------------------------------
+     3. Toolbar, Search & Filter Controls
+     -------------------------------------------------------------------------- */
+  .ss-moves-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .ss-moves-search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 280px;
+    max-width: 420px;
+  }
+
+  .ss-moves-search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ss-text-light);
+    font-size: 0.9rem;
+    pointer-events: none;
+  }
+
+  .ss-moves-search-input {
+    width: 100%;
+    padding: 10px 36px 10px 38px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    background-color: var(--ss-surface);
+    border: 1px solid var(--ss-border);
+    border-radius: var(--ss-radius-md);
+    color: var(--ss-text-main);
+    box-shadow: var(--ss-shadow-sm);
+    transition: all 0.2s ease;
+  }
+
+  .ss-moves-search-input::placeholder {
+    color: var(--ss-text-light);
+  }
+
+  .ss-moves-search-input:focus {
+    outline: none;
+    border-color: var(--ss-primary);
+    box-shadow: 0 0 0 3px rgba(113, 75, 103, 0.12);
+  }
+
+  .ss-moves-search-clear {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--ss-text-light);
+    cursor: pointer;
+    padding: 4px;
+    display: none;
+    border-radius: 50%;
+    font-size: 0.8rem;
+  }
+
+  .ss-moves-search-clear:hover {
+    color: var(--ss-text-main);
+    background-color: #F1F5F9;
+  }
+
+  .ss-moves-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* Filter Switcher Chips */
+  .ss-filter-pills {
+    display: flex;
+    background: var(--ss-surface);
+    border: 1px solid var(--ss-border);
+    border-radius: var(--ss-radius-md);
+    padding: 3px;
+    box-shadow: var(--ss-shadow-sm);
+  }
+
+  .ss-filter-pill-btn {
+    background: transparent;
+    border: none;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ss-text-muted);
+    border-radius: var(--ss-radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ss-filter-pill-btn:hover {
+    color: var(--ss-text-main);
+    background-color: var(--ss-bg);
+  }
+
+  .ss-filter-pill-btn.active {
+    background-color: var(--ss-primary);
+    color: #FFFFFF;
+    box-shadow: 0 2px 4px rgba(113, 75, 103, 0.25);
+  }
+
+  .ss-filter-pill-btn.active.filter-in {
+    background-color: var(--ss-in-color);
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+  }
+
+  .ss-filter-pill-btn.active.filter-out {
+    background-color: var(--ss-out-color);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  }
+
+  /* Action Buttons */
+  .ss-btn-tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border-radius: var(--ss-radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    background-color: var(--ss-surface);
+    color: var(--ss-text-sub);
+    border: 1px solid var(--ss-border);
+    box-shadow: var(--ss-shadow-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .ss-btn-tool:hover {
+    background-color: #F8FAFC;
+    color: var(--ss-text-main);
+    border-color: #CBD5E1;
+    transform: translateY(-1px);
+  }
+
+  .ss-btn-tool:active {
+    transform: translateY(0);
+  }
+
+  /* --------------------------------------------------------------------------
+     4. Audit Table Card & Data Rows
+     -------------------------------------------------------------------------- */
+  .ss-moves-card {
+    background: var(--ss-surface);
+    border: 1px solid var(--ss-border);
+    border-radius: var(--ss-radius-lg);
+    box-shadow: var(--ss-shadow-sm);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ss-table-responsive {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .ss-moves-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.88rem;
+  }
+
+  .ss-moves-table thead th {
+    background-color: #F8FAFC;
+    color: var(--ss-text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--ss-border);
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .ss-moves-table tbody tr {
+    border-bottom: 1px solid var(--ss-border-subtle);
+    transition: background-color 0.15s ease;
+  }
+
+  .ss-moves-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .ss-moves-table tbody tr:hover {
+    background-color: #F8FAFC;
+  }
+
+  .ss-moves-table td {
+    padding: 14px 20px;
+    vertical-align: middle;
+    color: var(--ss-text-main);
+  }
+
+  /* Reference Badge */
+  .ss-ref-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.88rem;
+  }
+
+  .ss-ref-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 10px;
+    border-radius: var(--ss-radius-sm);
+    font-size: 0.83rem;
+    font-weight: 700;
+  }
+
+  /* Date Cell */
+  .ss-date-cell {
+    color: var(--ss-text-sub);
+    font-size: 0.85rem;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ss-date-cell i {
+    color: var(--ss-text-light);
+    font-size: 0.8rem;
+  }
+
+  /* Locations */
+  .ss-loc-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    color: var(--ss-text-main);
+  }
+
+  .ss-loc-tag i {
+    font-size: 0.78rem;
+    color: var(--ss-text-muted);
+  }
+
+  /* Product Name */
+  .ss-product-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: var(--ss-text-main);
+  }
+
+  .ss-product-icon-box {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--ss-radius-sm);
+    background-color: #F1F5F9;
+    color: var(--ss-text-sub);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  /* Quantity Styles */
+  .ss-qty-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+
+  /* Status Badges */
+  .ss-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .ss-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+  }
+
+  .ss-status-done {
+    background-color: #ECFDF5;
+    color: #059669;
+    border: 1px solid #A7F3D0;
+  }
+
+  .ss-status-ready {
+    background-color: #E0F7F6;
+    color: #008784;
+    border: 1px solid #B2EBF2;
+  }
+
+  .ss-status-draft {
+    background-color: #F1F5F9;
+    color: #475569;
+    border: 1px solid #CBD5E1;
+  }
+
+  .ss-status-waiting {
+    background-color: #FFFBEB;
+    color: #D97706;
+    border: 1px solid #FDE68A;
+  }
+
+  .ss-status-cancel {
+    background-color: #FEF2F2;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+  }
+
+  /* ==========================================================================
+     IN vs OUT Moves Rules & Specific Color Coding
+     ========================================================================== */
+  /* IN MOVES: Green styling (#10B981) */
+  tr.move-in-row {
+    border-left: 3px solid var(--ss-in-color);
+  }
+
+  tr.move-in-row:hover {
+    background-color: rgba(16, 185, 129, 0.04);
+  }
+
+  tr.move-in-row .ss-ref-badge {
+    background-color: var(--ss-in-bg);
+    color: var(--ss-in-color);
+    border: 1px solid var(--ss-in-border);
+  }
+
+  tr.move-in-row .ss-qty-cell {
+    color: var(--ss-in-color);
+  }
+
+  tr.move-in-row .ss-product-icon-box {
+    background-color: var(--ss-in-bg);
+    color: var(--ss-in-color);
+  }
+
+  /* OUT MOVES: Red styling (#EF4444) */
+  tr.move-out-row {
+    border-left: 3px solid var(--ss-out-color);
+  }
+
+  tr.move-out-row:hover {
+    background-color: rgba(239, 68, 68, 0.04);
+  }
+
+  tr.move-out-row .ss-ref-badge {
+    background-color: var(--ss-out-bg);
+    color: var(--ss-out-color);
+    border: 1px solid var(--ss-out-border);
+  }
+
+  tr.move-out-row .ss-qty-cell {
+    color: var(--ss-out-color);
+  }
+
+  tr.move-out-row .ss-product-icon-box {
+    background-color: var(--ss-out-bg);
+    color: var(--ss-out-color);
+  }
+
+  /* --------------------------------------------------------------------------
+     5. Table Footer, Pagination & Empty State
+     -------------------------------------------------------------------------- */
+  .ss-table-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background-color: #FAFAFC;
+    border-top: 1px solid var(--ss-border);
+    font-size: 0.83rem;
+    color: var(--ss-text-muted);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .ss-empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--ss-text-muted);
+    display: none;
+  }
+
+  .ss-empty-icon {
+    font-size: 2.5rem;
+    color: #CBD5E1;
+    margin-bottom: 12px;
+  }
+
+  .ss-empty-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ss-text-main);
+    margin: 0 0 6px 0;
+  }
+
+  .ss-empty-desc {
+    font-size: 0.85rem;
+    color: var(--ss-text-muted);
+    margin: 0;
+  }
+
+  /* Flash Animation for newly appended ledger items */
+  @keyframes ss-ledger-flash {
+    0% { background-color: rgba(0, 160, 157, 0.15); }
+    100% { background-color: transparent; }
+  }
+
+  .ss-row-highlight {
+    animation: ss-ledger-flash 1.8s ease-out;
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    #view-moves.view-panel {
+      padding: 16px;
+      gap: 16px;
+    }
+    .ss-moves-header {
+      padding: 16px;
+    }
+    .ss-moves-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .ss-moves-search-wrap {
+      max-width: 100%;
+    }
+    .ss-moves-actions {
+      justify-content: space-between;
+    }
+  }
+</style>
+
+<!-- ==========================================================================
+     MOVE HISTORY SECTION (AUDIT TRAIL & INVENTORY LEDGER)
+     ========================================================================== -->
+<section id="view-moves" class="view-panel">
+
+  <!-- 1. Header Section with Title & Legend Chips -->
+  <div class="ss-moves-header view-header">
+    <div class="ss-moves-title-group">
+      <div class="ss-moves-title-wrapper">
+        <h1>
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          Move History (Inventory Ledger)
+        </h1>
+        <span class="ss-moves-badge">Audit Trail</span>
+      </div>
+      <p class="ss-moves-subtitle text-muted">
+        <i class="fa-solid fa-circle-info"></i>
+        Populates all stock movements done between From &amp; To locations
+      </p>
+    </div>
+
+    <!-- Legend Chips: IN Moves in Green, OUT Moves in Red -->
+    <div class="ss-moves-legend move-legend">
+      <span class="ss-legend-chip in legend-chip in">
+        <i class="fa-solid fa-circle-arrow-down"></i>
+        <span>IN Moves (Green)</span>
+      </span>
+      <span class="ss-legend-chip out legend-chip out">
+        <i class="fa-solid fa-circle-arrow-up"></i>
+        <span>OUT Moves (Red)</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- 2. KPI Summary Cards -->
+  <div class="ss-moves-kpis">
+    <div class="ss-kpi-card">
+      <div class="ss-kpi-info">
+        <span class="ss-kpi-label">Total Entries</span>
+        <span class="ss-kpi-val" id="kpi-total-moves">5</span>
+      </div>
+      <div class="ss-kpi-icon total">
+        <i class="fa-solid fa-list-check"></i>
+      </div>
+    </div>
+
+    <div class="ss-kpi-card">
+      <div class="ss-kpi-info">
+        <span class="ss-kpi-label">IN (Inbound) Units</span>
+        <span class="ss-kpi-val" style="color: var(--ss-in-color);" id="kpi-total-in">+40</span>
+      </div>
+      <div class="ss-kpi-icon in">
+        <i class="fa-solid fa-arrow-down-left-and-arrow-up-right-to-center"></i>
+      </div>
+    </div>
+
+    <div class="ss-kpi-card">
+      <div class="ss-kpi-info">
+        <span class="ss-kpi-label">OUT (Outbound) Units</span>
+        <span class="ss-kpi-val" style="color: var(--ss-out-color);" id="kpi-total-out">-12</span>
+      </div>
+      <div class="ss-kpi-icon out">
+        <i class="fa-solid fa-truck-fast"></i>
+      </div>
+    </div>
+
+    <div class="ss-kpi-card">
+      <div class="ss-kpi-info">
+        <span class="ss-kpi-label">Net Movement</span>
+        <span class="ss-kpi-val" style="color: var(--ss-accent);" id="kpi-net-movement">+28</span>
+      </div>
+      <div class="ss-kpi-icon net">
+        <i class="fa-solid fa-arrow-right-arrow-left"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Filter & Action Toolbar -->
+  <div class="ss-moves-toolbar">
+    <!-- Live Search Input -->
+    <div class="ss-moves-search-wrap">
+      <i class="fa-solid fa-magnifying-glass ss-moves-search-icon"></i>
+      <input 
+        type="text" 
+        id="input-search-moves" 
+        class="ss-moves-search-input" 
+        placeholder="Filter by reference, product, location, date..."
+        oninput="handleMovesFilter(this.value)"
+        aria-label="Filter move history"
+      >
+      <button 
+        type="button" 
+        id="btn-clear-moves-search" 
+        class="ss-moves-search-clear" 
+        onclick="clearMovesSearch()" 
+        title="Clear search"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Filter Buttons & Export Actions -->
+    <div class="ss-moves-actions">
+      <div class="ss-filter-pills" role="group" aria-label="Filter movement type">
+        <button type="button" class="ss-filter-pill-btn active" id="btn-filter-all" onclick="setMovesTypeFilter('ALL')">
+          <i class="fa-solid fa-border-all"></i> All
+        </button>
+        <button type="button" class="ss-filter-pill-btn filter-in" id="btn-filter-in" onclick="setMovesTypeFilter('IN')">
+          <i class="fa-solid fa-circle-arrow-down"></i> IN Moves
+        </button>
+        <button type="button" class="ss-filter-pill-btn filter-out" id="btn-filter-out" onclick="setMovesTypeFilter('OUT')">
+          <i class="fa-solid fa-circle-arrow-up"></i> OUT Moves
+        </button>
+      </div>
+
+      <button type="button" class="ss-btn-tool" onclick="exportMoveHistoryCSV()" title="Export CSV">
+        <i class="fa-solid fa-file-csv"></i> Export CSV
+      </button>
+
+      <button type="button" class="ss-btn-tool" onclick="loadMoveHistory()" title="Reload Ledger">
+        <i class="fa-solid fa-arrows-rotate"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- 4. Audit Table Card (Reference, Date, From, To, Product, Quantity, Status) -->
+  <div class="ss-moves-card card table-card">
+    <div class="ss-table-responsive table-responsive">
+      <table class="ss-moves-table data-table move-history-table" id="moves-audit-table">
+        <thead>
+          <tr>
+            <th style="min-width: 170px;"><i class="fa-solid fa-hashtag"></i> Reference</th>
+            <th style="min-width: 130px;"><i class="fa-regular fa-calendar"></i> Date</th>
+            <th style="min-width: 160px;"><i class="fa-solid fa-location-arrow"></i> From Location</th>
+            <th style="min-width: 160px;"><i class="fa-solid fa-location-dot"></i> To Location</th>
+            <th style="min-width: 200px;"><i class="fa-solid fa-box"></i> Product Name</th>
+            <th style="min-width: 130px;"><i class="fa-solid fa-arrow-up-right-dots"></i> Quantity</th>
+            <th style="min-width: 120px; text-align: center;"><i class="fa-solid fa-circle-check"></i> Status</th>
+          </tr>
+        </thead>
+        <tbody id="moves-table-body">
+          <!-- Initial Seed Rows (Rendered for immediate display & auto-hydrated by JS) -->
+          
+          <!-- Row 1: IN Move (Desk) -->
+          <tr class="move-in-row" data-type="IN" data-ref="WH/IN/0001" data-date="2026-09-20" data-from="vendor" data-to="WH/Stock1" data-product="Desk" data-qty="20" data-status="Ready">
+            <td class="ss-ref-cell">
+              <span class="ss-ref-badge ref-badge">
+                <i class="fa-solid fa-arrow-down-left-and-arrow-up-right-to-center"></i>
+                <span>WH/IN/0001</span>
+              </span>
+            </td>
+            <td>
+              <span class="ss-date-cell">
+                <i class="fa-regular fa-calendar-days"></i>
+                2026-09-20
+              </span>
+            </td>
+            <td><span class="ss-loc-tag"><i class="fa-solid fa-warehouse"></i> vendor</span></td>
+            <td><span class="ss-loc-tag"><i class="fa-solid fa-dolly"></i> WH/Stock1</span></td>
+            <td>
+              <div class="ss-product-cell">
+                <div class="ss-product-icon-box"><i class="fa-solid fa-chair"></i></div>
+                <span>Desk</span>
+              </div>
+            </td>
+            <td><strong class="ss-qty-cell font-mono">+20</strong></td>
+            <td style="text-align: center;">
+              <span class="ss-status-badge ss-status-ready status-pill status-ready">
+                <span class="ss-status-dot"></span> Ready
+              </span>
+            </td>
+          </tr>
+
+          <!-- Row 2: OUT Move (Desk) - Multiple products in reference WH/OUT/0002 -->
+          <tr class="move-out-row" data-type="OUT" data-ref="WH/OUT/0002" data-date="2026-09-22" data-from="vendor" data-to="WH/Stock1" data-product="Desk" data-qty="5" data-status="Ready">
+            <td class="ss-ref-cell">
+              <span class="ss-ref-badge ref-badge">
+                <i class="fa-solid fa-truck-fast"></i>
+                <span>WH/OUT/0002</span>
+              </span>
+            </td>
+            <td>
+              <span class="ss-date-cell">
+                <i class="fa-regular fa-calendar-days"></i>
+                2026-09-22
+              </span>
+            </td>
+            <td><span class="ss-loc-tag"><i class="fa-solid fa-warehouse"></i> vendor</span></td>
+            <td><span class="ss-loc-tag"><i class="fa-solid fa-dolly"></i> WH/Stock1</span></td>
+            <td>
+              <div class="ss-product-cell">
+                <div class="ss-product-icon-box"><i class="fa-solid fa-chair"></i></div>
+                <span>Desk</span>
+              </div>
+            </td>
+            <td><strong class="ss-qty-cell font-mono">-5</strong></td>
+            <td style="text-align: center;">
+              <span class="ss-status-badge ss-status-ready status-pill status-ready">
+                <span class="ss-status-dot"></span> Ready
+              </span>
+            </td>
+          </tr>
+
+          <!-- Row 3: OUT Move (Table) - Multiple products in reference WH/OUT/0002 -->
+          <tr class="move-out-row" data-type="OUT" data-ref="WH/OUT/0002" data-date="2026-09-22" data-from="WH/Stock2" data-to="vendor" data-product="Table" data-qty="5" data-status="Ready">
+            <td class="ss-ref-cell">
+              <span class="ss-ref-badge ref-badge">
+                <i class="fa-solid fa-truck-fast"></i>
+                <span>WH/OUT/0002</span>
+              </span>
+            </td>
+            <td>
+              <span class="ss-date-cell">
+                <i class="fa-regular fa-calendar-days"></i>
+                2026-09-22
+              </span>
+            </td>
+            <td><span class="ss-loc-tag"><i class="fa-solid fa-dolly"></i> WH/Stock2</span></td>
+            <td><span class="ss-loc-tag"><i class="fa-solid fa-warehouse"></i> vendor</span></td>
+            <td>
+              <div class="ss-product-cell">
+                <div class="ss-product-icon-box"><i class="fa-solid fa-table"></i></div>
+                <span>Table</span>
+              </div>
+            </td>
+            <td><strong class="ss-qty-cell font-mono">-5</strong></td>
+            <td style="text-align: center;">
+              <span class="ss-status-badge ss-status-ready status-pill status-ready">
+                <span class="ss-status-dot"></span> Ready
+              </span>
+            </td>
+          </tr>
+
+          <!-- Row 4: IN Move (LED Desk Lamp) -->
+          <tr class="move-in-row" data-type="IN" data-ref="WH/IN/0005" data-date="2026-09-24" data-from="vendor" data-to="WH/Stock1" data-product="LED Desk Lamp" data-qty="20" data-status="Done">
+            <td class="ss-ref-cell">
+              <span class="ss-ref-badge ref-badge">
+                <i class="fa-solid fa-arrow-down-left-and-arrow-up-right-to-center"></i>
+                <span>WH/IN/0005</span>
+              </span>
+            </td>
+            <td>
+              <span class="ss-date-cell">
+                <i class="fa-regular fa-calendar-days"></i>
+                2026-09-24
+              </span>
+            </td>
+            <td><span class="ss-loc-tag"><i class="fa-solid fa-warehouse"></i> vendor</span></td>
+            <td><span class="ss-loc-tag"><i class="fa-solid fa-dolly"></i> WH/Stock1</span></td>
+            <td>
+              <div class="ss-product-cell">
+                <div class="ss-product-icon-box"><i class="fa-solid fa-lightbulb"></i></div>
+                <span>LED Desk Lamp</span>
+              </div>
+            </td>
+            <td><strong class="ss-qty-cell font-mono">+20</strong></td>
+            <td style="text-align: center;">
+              <span class="ss-status-badge ss-status-done status-pill status-done">
+                <span class="ss-status-dot"></span> Done
+              </span>
+            </td>
+          </tr>
+
+          <!-- Row 5: OUT Move (Ergonomic Chair) -->
+          <tr class="move-out-row" data-type="OUT" data-ref="WH/OUT/0006" data-date="2026-09-25" data-from="WH/Stock1" data-to="Customer" data-product="Ergonomic Chair" data-qty="2" data-status="Done">
+            <td class="ss-ref-cell">
+              <span class="ss-ref-badge ref-badge">
+                <i class="fa-solid fa-truck-fast"></i>
+                <span>WH/OUT/0006</span>
+              </span>
+            </td>
+            <td>
+              <span class="ss-date-cell">
+                <i class="fa-regular fa-calendar-days"></i>
+                2026-09-25
+              </span>
+            </td>
+            <td><span class="ss-loc-tag"><i class="fa-solid fa-dolly"></i> WH/Stock1</span></td>
+            <td><span class="ss-loc-tag"><i class="fa-solid fa-user-tag"></i> Customer</span></td>
+            <td>
+              <div class="ss-product-cell">
+                <div class="ss-product-icon-box"><i class="fa-solid fa-couch"></i></div>
+                <span>Ergonomic Chair</span>
+              </div>
+            </td>
+            <td><strong class="ss-qty-cell font-mono">-2</strong></td>
+            <td style="text-align: center;">
+              <span class="ss-status-badge ss-status-done status-pill status-done">
+                <span class="ss-status-dot"></span> Done
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Empty State -->
+      <div id="moves-empty-state" class="ss-empty-state">
+        <div class="ss-empty-icon">
+          <i class="fa-solid fa-box-open"></i>
+        </div>
+        <h4 class="ss-empty-title">No Move Records Found</h4>
+        <p class="ss-empty-desc">No movement entries match your current search and type filters.</p>
+      </div>
+    </div>
+
+    <!-- Table Footer with Record Count & Legend Hint -->
+    <div class="ss-table-footer">
+      <div>
+        <span>Showing <strong id="moves-visible-count">5</strong> movement records</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <span><i class="fa-solid fa-circle-check" style="color: var(--ss-in-color);"></i> Auto-Audited Inventory</span>
+        <span>•</span>
+        <span>Odoo Multi-Location Rules Active</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==========================================================================
+     Interactive Controller & Dynamic Data Handlers
+     ========================================================================== -->
+<script>
+  // State management for move history ledger
+  window.StockSenseMovesState = window.StockSenseMovesState || {
+    rawMoves: [],
+    typeFilter: 'ALL', // 'ALL' | 'IN' | 'OUT'
+    searchQuery: ''
+  };
+
+  /**
+   * Helper: Product icon selector based on product name
+   */
+  function getProductIconClass(name) {
+    const n = (name || '').toLowerCase();
+    if (n.includes('chair') || n.includes('seat')) return 'fa-chair';
+    if (n.includes('lamp') || n.includes('light')) return 'fa-lightbulb';
+    if (n.includes('table')) return 'fa-table';
+    if (n.includes('desk')) return 'fa-couch';
+    if (n.includes('laptop') || n.includes('pc') || n.includes('computer')) return 'fa-laptop';
+    return 'fa-box';
+  }
+
+  /**
+   * Helper: Status class selector
+   */
+  function getStatusBadgeHtml(status) {
+    const st = (status || 'Done').trim();
+    const stLower = st.toLowerCase();
+    let badgeClass = 'ss-status-done status-done';
+    
+    if (stLower === 'ready') badgeClass = 'ss-status-ready status-ready';
+    else if (stLower === 'draft') badgeClass = 'ss-status-draft status-draft';
+    else if (stLower === 'waiting') badgeClass = 'ss-status-waiting status-waiting';
+    else if (stLower === 'cancel' || stLower === 'cancelled') badgeClass = 'ss-status-cancel status-cancel';
+
+    return `
+      <span class="ss-status-badge ${badgeClass} status-pill">
+        <span class="ss-status-dot"></span>
+        <span>${escapeMoveHtml(st)}</span>
+      </span>
+    `;
+  }
+
+  /**
+   * Renders the moves ledger table and updates KPIs based on current state & filters
+   */
+  function renderMovesLedger() {
+    const tbody = document.getElementById("moves-table-body");
+    const emptyState = document.getElementById("moves-empty-state");
+    const visibleCountEl = document.getElementById("moves-visible-count");
+    if (!tbody) return;
+
+    const query = (window.StockSenseMovesState.searchQuery || '').toLowerCase().trim();
+    const typeFilter = window.StockSenseMovesState.typeFilter;
+    const moves = window.StockSenseMovesState.rawMoves || [];
+
+    // Filter items
+    const filtered = moves.filter(m => {
+      const isIN = (m.op_type || '').toUpperCase() === 'IN';
+      const typeMatches = typeFilter === 'ALL' || (typeFilter === 'IN' && isIN) || (typeFilter === 'OUT' && !isIN);
+      if (!typeMatches) return false;
+
+      if (!query) return true;
+      const ref = (m.reference || '').toLowerCase();
+      const prod = (m.product_name || '').toLowerCase();
+      const fromLoc = (m.from_loc || '').toLowerCase();
+      const toLoc = (m.to_loc || '').toLowerCase();
+      const dateVal = (m.date || '').toLowerCase();
+      const st = (m.status || '').toLowerCase();
+
+      return ref.includes(query) || prod.includes(query) || fromLoc.includes(query) || toLoc.includes(query) || dateVal.includes(query) || st.includes(query);
+    });
+
+    // Update KPI counters from the complete dataset
+    let totalInQty = 0;
+    let totalOutQty = 0;
+    moves.forEach(m => {
+      const q = Math.abs(parseInt(m.quantity, 10) || 0);
+      if ((m.op_type || '').toUpperCase() === 'IN') {
+        totalInQty += q;
+      } else {
+        totalOutQty += q;
+      }
+    });
+
+    const kpiTotalEl = document.getElementById("kpi-total-moves");
+    const kpiInEl = document.getElementById("kpi-total-in");
+    const kpiOutEl = document.getElementById("kpi-total-out");
+    const kpiNetEl = document.getElementById("kpi-net-movement");
+
+    if (kpiTotalEl) kpiTotalEl.textContent = moves.length;
+    if (kpiInEl) kpiInEl.textContent = '+' + totalInQty;
+    if (kpiOutEl) kpiOutEl.textContent = '-' + totalOutQty;
+    if (kpiNetEl) {
+      const net = totalInQty - totalOutQty;
+      kpiNetEl.textContent = (net >= 0 ? '+' : '') + net;
+    }
+
+    if (visibleCountEl) visibleCountEl.textContent = filtered.length;
+
+    // Render table rows
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      if (emptyState) emptyState.style.display = 'block';
+      return;
+    }
+
+    if (emptyState) emptyState.style.display = 'none';
+
+    tbody.innerHTML = filtered.map(m => {
+      const isIN = (m.op_type || '').toUpperCase() === "IN";
+      const sign = isIN ? '+' : '-';
+      const rowClass = isIN ? 'move-in-row' : 'move-out-row';
+      const refIcon = isIN ? 'fa-arrow-down-left-and-arrow-up-right-to-center' : 'fa-truck-fast';
+      const prodIcon = getProductIconClass(m.product_name);
+      const qty = Math.abs(parseInt(m.quantity, 10) || 0);
+      const fromIcon = (m.from_loc || '').toLowerCase().includes('vendor') ? 'fa-warehouse' : 'fa-dolly';
+      const toIcon = (m.to_loc || '').toLowerCase().includes('customer') ? 'fa-user-tag' : 'fa-dolly';
+
+      return `
+        <tr class="${rowClass}" data-type="${isIN ? 'IN' : 'OUT'}" data-ref="${escapeMoveHtml(m.reference)}" data-date="${escapeMoveHtml(m.date)}" data-from="${escapeMoveHtml(m.from_loc)}" data-to="${escapeMoveHtml(m.to_loc)}" data-product="${escapeMoveHtml(m.product_name)}" data-qty="${qty}" data-status="${escapeMoveHtml(m.status)}">
+          <td class="ss-ref-cell">
+            <span class="ss-ref-badge ref-badge">
+              <i class="fa-solid ${refIcon}"></i>
+              <span>${escapeMoveHtml(m.reference)}</span>
+            </span>
+          </td>
+          <td>
+            <span class="ss-date-cell">
+              <i class="fa-regular fa-calendar-days"></i>
+              ${escapeMoveHtml(m.date)}
+            </span>
+          </td>
+          <td><span class="ss-loc-tag"><i class="fa-solid ${fromIcon}"></i> ${escapeMoveHtml(m.from_loc)}</span></td>
+          <td><span class="ss-loc-tag"><i class="fa-solid ${toIcon}"></i> ${escapeMoveHtml(m.to_loc)}</span></td>
+          <td>
+            <div class="ss-product-cell">
+              <div class="ss-product-icon-box"><i class="fa-solid ${prodIcon}"></i></div>
+              <span>${escapeMoveHtml(m.product_name)}</span>
+            </div>
+          </td>
+          <td><strong class="ss-qty-cell font-mono">${sign}${qty}</strong></td>
+          <td style="text-align: center;">
+            ${getStatusBadgeHtml(m.status)}
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  /**
+   * Primary API loader: fetches moves ledger from backend
+   */
+  async function loadMoveHistory() {
+    try {
+      const res = await fetch("/api/moves");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          window.StockSenseMovesState.rawMoves = data;
+          renderMovesLedger();
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("API /api/moves not available or failed. Using fallback dataset.", err);
+    }
+
+    // Fallback seed data if offline or API returned empty
+    if (!window.StockSenseMovesState.rawMoves || window.StockSenseMovesState.rawMoves.length === 0) {
+      window.StockSenseMovesState.rawMoves = [
+        { id: 1, reference: 'WH/IN/0001', op_type: 'IN', date: '2026-09-20', from_loc: 'vendor', to_loc: 'WH/Stock1', product_name: 'Desk', quantity: 20, status: 'Ready' },
+        { id: 2, reference: 'WH/OUT/0002', op_type: 'OUT', date: '2026-09-22', from_loc: 'vendor', to_loc: 'WH/Stock1', product_name: 'Desk', quantity: 5, status: 'Ready' },
+        { id: 3, reference: 'WH/OUT/0002', op_type: 'OUT', date: '2026-09-22', from_loc: 'WH/Stock2', to_loc: 'vendor', product_name: 'Table', quantity: 5, status: 'Ready' },
+        { id: 4, reference: 'WH/IN/0005', op_type: 'IN', date: '2026-09-24', from_loc: 'vendor', to_loc: 'WH/Stock1', product_name: 'LED Desk Lamp', quantity: 20, status: 'Done' },
+        { id: 5, reference: 'WH/OUT/0006', op_type: 'OUT', date: '2026-09-25', from_loc: 'WH/Stock1', to_loc: 'Customer', product_name: 'Ergonomic Chair', quantity: 2, status: 'Done' }
+      ];
+    }
+    renderMovesLedger();
+  }
+
+  /**
+   * Search input handler
+   */
+  function handleMovesFilter(query) {
+    window.StockSenseMovesState.searchQuery = query;
+    const clearBtn = document.getElementById("btn-clear-moves-search");
+    if (clearBtn) {
+      clearBtn.style.display = query.trim() ? "block" : "none";
+    }
+    renderMovesLedger();
+  }
+
+  /**
+   * Clear search input
+   */
+  function clearMovesSearch() {
+    const input = document.getElementById("input-search-moves");
+    if (input) {
+      input.value = "";
+      handleMovesFilter("");
+      input.focus();
+    }
+  }
+
+  /**
+   * Set Type Filter (ALL / IN / OUT)
+   */
+  function setMovesTypeFilter(type) {
+    window.StockSenseMovesState.typeFilter = type;
+    
+    // Update active class on buttons
+    const btnAll = document.getElementById("btn-filter-all");
+    const btnIn = document.getElementById("btn-filter-in");
+    const btnOut = document.getElementById("btn-filter-out");
+
+    if (btnAll) btnAll.classList.toggle("active", type === "ALL");
+    if (btnIn) btnIn.classList.toggle("active", type === "IN");
+    if (btnOut) btnOut.classList.toggle("active", type === "OUT");
+
+    renderMovesLedger();
+  }
+
+  /**
+   * Export Move History to CSV
+   */
+  function exportMoveHistoryCSV() {
+    const moves = window.StockSenseMovesState.rawMoves || [];
+    if (moves.length === 0) {
+      alert("No move records to export.");
+      return;
+    }
+
+    const headers = ["Reference", "Type", "Date", "From Location", "To Location", "Product Name", "Quantity", "Status"];
+    const rows = moves.map(m => {
+      const isIN = (m.op_type || '').toUpperCase() === 'IN';
+      const qtyStr = (isIN ? '+' : '-') + Math.abs(m.quantity);
+      return [
+        `"${m.reference}"`,
+        `"${m.op_type}"`,
+        `"${m.date}"`,
+        `"${m.from_loc}"`,
+        `"${m.to_loc}"`,
+        `"${m.product_name}"`,
+        `"${qtyStr}"`,
+        `"${m.status}"`
+      ].join(",");
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `stocksense_move_history_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  /**
+   * Safe HTML Escaping
+   */
+  function escapeMoveHtml(str) {
+    if (str === null || str === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+  }
+
+  // Self-initialize on DOM ready or navigation
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadMoveHistory);
+  } else {
+    loadMoveHistory();
+  }
+</script>
