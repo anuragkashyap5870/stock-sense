@@ -823,10 +823,31 @@ async function submitNewDelivery(e) {
 
 // --- 5. Move History (Color Coded Ledger) ---
 async function loadMoveHistory() {
+  // If the rich move_history.html component is loaded, use its full-featured loader
+  if (window.StockSenseMovesState !== undefined) {
+    try {
+      const res = await fetch("/api/moves");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          window.StockSenseMovesState.rawMoves = data;
+          // Call the rich component's render function if available
+          if (typeof renderMovesLedger === 'function') {
+            renderMovesLedger();
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to load moves via rich component:", err);
+    }
+    return;
+  }
+  // Fallback: simple table rendering
   try {
     const res = await fetch("/api/moves");
     const moves = await res.json();
     const tbody = document.getElementById("moves-table-body");
+    if (!tbody) return;
 
     tbody.innerHTML = moves.map(m => {
       const isIN = m.op_type === "IN";

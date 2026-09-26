@@ -343,40 +343,9 @@
         </div>
       </section>
 
-      <!-- 5. MOVE HISTORY VIEW (Audit Trail) -->
-      <section id="view-moves" class="view-panel">
-        <div class="view-header">
-          <div>
-            <h1>Move History (Inventory Ledger)</h1>
-            <p class="text-muted">Populates all stock movements done between From & To locations</p>
-          </div>
-          <div class="move-legend">
-            <span class="legend-chip in"><i class="fa-solid fa-circle-arrow-down"></i> IN Moves (Green)</span>
-            <span class="legend-chip out"><i class="fa-solid fa-circle-arrow-up"></i> OUT Moves (Red)</span>
-          </div>
-        </div>
+      <!-- 5. MOVE HISTORY VIEW (Rich Modular Component) -->
+      {% include 'components/move_history.html' %}
 
-        <div class="card table-card">
-          <div class="table-responsive">
-            <table class="data-table move-history-table">
-              <thead>
-                <tr>
-                  <th>Reference</th>
-                  <th>Date</th>
-                  <th>From</th>
-                  <th>To</th>
-                  <th>Product</th>
-                  <th>Quantity</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="moves-table-body">
-                <!-- Populated via JS with color coding -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
 
       <!-- 6. SETTINGS: WAREHOUSE VIEW -->
       <section id="view-warehouse" class="view-panel">
