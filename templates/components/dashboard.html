@@ -41,7 +41,7 @@
       font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background-color: var(--ss-bg);
       color: var(--ss-text-main);
-      min-height: 100vh;
+      min-height: auto;
       flex-direction: column;
       box-sizing: border-box;
       display: none;
@@ -256,16 +256,16 @@
       padding-right: 4px;
     }
 
-    /* Buttons Rule: 8px border-radius, 10px 20px padding, font-weight 600 */
+    /* Buttons Rule: 8px border-radius, 10px 22px padding, font-weight 700 */
     #view-dashboard .ss-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       border-radius: 8px;
-      padding: 10px 20px;
-      font-weight: 600;
-      font-size: 0.875rem;
+      padding: 10px 22px;
+      font-weight: 700;
+      font-size: 0.95rem;
       line-height: 1.25rem;
       cursor: pointer;
       transition: all 0.18s ease;
@@ -308,17 +308,17 @@
     }
 
     #view-dashboard .ss-btn-sm {
-      padding: 6px 14px;
-      font-size: 0.8rem;
+      padding: 7px 16px;
+      font-size: 0.88rem;
     }
 
     /* Main Container */
     #view-dashboard .ss-main-content {
       flex: 1;
-      padding: 28px 32px 48px;
-      max-width: 1400px;
+      padding: 0 0 32px 0;
+      max-width: 100%;
       width: 100%;
-      margin: 0 auto;
+      margin: 0;
     }
 
     /* Dashboard Header Section */
@@ -328,7 +328,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     #view-dashboard .ss-title-block {
@@ -339,7 +339,7 @@
 
     #view-dashboard .ss-page-title {
       margin: 0;
-      font-size: 1.65rem;
+      font-size: 1.85rem;
       font-weight: 800;
       color: var(--ss-text-main);
       letter-spacing: -0.025em;
@@ -347,7 +347,7 @@
 
     #view-dashboard .ss-page-subtitle {
       margin: 0;
-      font-size: 0.875rem;
+      font-size: 0.95rem;
       color: var(--ss-text-muted);
     }
 
