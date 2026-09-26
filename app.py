@@ -456,6 +456,40 @@ def update_stock(pid):
     conn.close()
     return jsonify({"success": True})
 
+@app.route("/api/adjustment", methods=["POST"])
+def adjust_inventory():
+    data = request.json or {}
+    pid = data.get("product_id")
+    counted = int(data.get("counted_qty", 0))
+    diff = int(data.get("difference", 0))
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM products WHERE id = ?", (pid,))
+    prod = cursor.fetchone()
+    if not prod:
+        conn.close()
+        return jsonify({"success": False, "message": "Product not found"}), 404
+        
+    old_on_hand = prod["on_hand"]
+    old_free = prod["free_to_use"]
+    new_free = max(0, old_free + diff)
+    cursor.execute("UPDATE products SET on_hand = ?, free_to_use = ? WHERE id = ?", (counted, new_free, pid))
+    
+    if diff != 0:
+        op_type = "IN" if diff > 0 else "OUT"
+        ref = f"WH/ADJ/{pid:04d}"
+        from_loc = "Inventory Loss/Gain" if diff > 0 else "WH/Stock1"
+        to_loc = "WH/Stock1" if diff > 0 else "Inventory Loss/Gain"
+        cursor.execute("""
+            INSERT INTO move_history (reference, op_type, date, from_loc, to_loc, product_name, quantity, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Done')
+        """, (ref, op_type, date.today().isoformat(), from_loc, to_loc, prod["name"], abs(diff)))
+    
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "message": f"Stock adjusted for {prod['name']} to {counted} units."})
+
 # --- Settings: Warehouses & Locations APIs ---
 @app.route("/api/warehouses", methods=["GET", "POST"])
 def manage_warehouses():

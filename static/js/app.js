@@ -236,6 +236,7 @@ function navigateTo(viewName, e) {
   if (viewName === "receipts") loadReceipts();
   if (viewName === "deliveries") loadDeliveries();
   if (viewName === "moves") loadMoveHistory();
+  if (viewName === "adjustment" && typeof loadAdjustmentTable === "function") loadAdjustmentTable();
   if (viewName === "warehouse") loadWarehouses();
   if (viewName === "locations") loadLocations();
 }
@@ -1178,6 +1179,147 @@ async function resetDemoData() {
     }
   } catch (err) {
     alert("Error resetting demo data");
+  }
+}
+
+// --- 9. Physical Inventory Adjustment Functions ---
+let adjustmentProducts = [];
+
+async function loadAdjustmentTable() {
+  try {
+    const res = await fetch("/api/products");
+    if (res.ok) {
+      adjustmentProducts = await res.json();
+      renderAdjustmentRows(adjustmentProducts);
+    }
+  } catch (err) {
+    console.error("Failed to load products for adjustment", err);
+  }
+}
+
+function renderAdjustmentRows(products) {
+  const tbody = document.getElementById("adjustment-table-body");
+  if (!tbody) return;
+
+  tbody.innerHTML = products.map(p => `
+    <tr id="adj-row-${p.id}" data-pid="${p.id}" data-name="${p.name}">
+      <td>
+        <strong>${p.name}</strong>
+        <small class="text-muted font-mono d-block" style="display:block; font-size:11px;">SKU: ${p.code}</small>
+      </td>
+      <td><span class="badge" style="background:#f1f5f9; padding:4px 8px; border-radius:4px; font-size:12px;">WH/Stock1</span></td>
+      <td class="text-right font-mono font-bold" id="adj-theo-${p.id}">${p.on_hand}</td>
+      <td class="text-center">
+        <div class="adj-stepper">
+          <button type="button" class="adj-stepper-btn" onclick="stepAdjustmentQty(${p.id}, -1)">&minus;</button>
+          <input type="number" class="adj-stepper-input" id="adj-count-${p.id}" value="${p.on_hand}" min="0" oninput="recalcRowVariance(${p.id})">
+          <button type="button" class="adj-stepper-btn" onclick="stepAdjustmentQty(${p.id}, 1)">&plus;</button>
+        </div>
+      </td>
+      <td class="text-center" id="adj-var-container-${p.id}">
+        <span class="variance-badge variance-zero" id="adj-var-${p.id}">0</span>
+      </td>
+      <td class="text-right">
+        <button class="btn btn-outline btn-sm" id="btn-apply-${p.id}" onclick="applySingleAdjustment(${p.id})">
+          Apply
+        </button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function stepAdjustmentQty(pid, delta) {
+  const input = document.getElementById(`adj-count-${pid}`);
+  if (!input) return;
+  let val = parseInt(input.value) || 0;
+  val = Math.max(0, val + delta);
+  input.value = val;
+  recalcRowVariance(pid);
+}
+
+function recalcRowVariance(pid) {
+  const theo = parseInt(document.getElementById(`adj-theo-${pid}`).textContent) || 0;
+  const counted = parseInt(document.getElementById(`adj-count-${pid}`).value) || 0;
+  const diff = counted - theo;
+  const badge = document.getElementById(`adj-var-${pid}`);
+  if (!badge) return;
+
+  badge.className = "variance-badge";
+  if (diff === 0) {
+    badge.classList.add("variance-zero");
+    badge.textContent = "0";
+  } else if (diff > 0) {
+    badge.classList.add("variance-positive");
+    badge.textContent = `+${diff}`;
+  } else {
+    badge.classList.add("variance-negative");
+    badge.textContent = `${diff}`;
+  }
+}
+
+function filterAdjustmentTable() {
+  const query = (document.getElementById("adj-search-input")?.value || "").toLowerCase().trim();
+  adjustmentProducts.forEach(p => {
+    const row = document.getElementById(`adj-row-${p.id}`);
+    if (!row) return;
+    const match = p.name.toLowerCase().includes(query) || (p.code || '').toLowerCase().includes(query);
+    row.style.display = match ? "" : "none";
+  });
+}
+
+async function applySingleAdjustment(pid) {
+  const counted = parseInt(document.getElementById(`adj-count-${pid}`).value) || 0;
+  const theo = parseInt(document.getElementById(`adj-theo-${pid}`).textContent) || 0;
+  const diff = counted - theo;
+
+  if (diff === 0) {
+    alert("Counted quantity matches theoretical stock. No adjustment needed.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/adjustment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ product_id: pid, counted_qty: counted, difference: diff })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert("✅ " + data.message);
+      loadAdjustmentTable();
+      if (typeof loadStockTable === "function") loadStockTable();
+      if (typeof loadMoveHistory === "function") loadMoveHistory();
+    } else {
+      alert(data.message || "Failed to adjust stock");
+    }
+  } catch (e) {
+    alert("Error sending adjustment");
+  }
+}
+
+async function applyAllAdjustments() {
+  const rows = document.querySelectorAll("#adjustment-table-body tr");
+  let count = 0;
+  for (const r of rows) {
+    const pid = r.getAttribute("data-pid");
+    const theo = parseInt(document.getElementById(`adj-theo-${pid}`).textContent) || 0;
+    const counted = parseInt(document.getElementById(`adj-count-${pid}`).value) || 0;
+    if (counted !== theo) {
+      await fetch("/api/adjustment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: parseInt(pid), counted_qty: counted, difference: counted - theo })
+      });
+      count++;
+    }
+  }
+  if (count > 0) {
+    alert(`✅ Reconciled ${count} products successfully!`);
+    loadAdjustmentTable();
+    if (typeof loadStockTable === "function") loadStockTable();
+    if (typeof loadMoveHistory === "function") loadMoveHistory();
+  } else {
+    alert("All products are already matching theoretical stock.");
   }
 }
 

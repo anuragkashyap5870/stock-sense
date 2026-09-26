@@ -1,0 +1,433 @@
+<!-- ==============================================================================
+  StockSense - Modular Inventory Management System
+  Component: Physical Inventory Adjustment
+  File: templates/components/inventory_adjustment.html
+  Odoo-style Count Reconciliation & Variance
+============================================================================== -->
+
+<!-- Google Fonts & Font Awesome Icons -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+  /* Scoped Styles for Physical Inventory Adjustment */
+  #view-adjustment {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #0F172A;
+  }
+
+  .adj-stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border-color, #cbd5e1);
+    border-radius: 6px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  
+  .adj-stepper-btn {
+    border: none;
+    background: #f1f5f9;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #475569;
+    transition: background-color 0.15s ease;
+    font-size: 14px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+  }
+  
+  .adj-stepper-btn:hover { 
+    background: #e2e8f0; 
+    color: #0f172a;
+  }
+  
+  .adj-stepper-input {
+    width: 65px;
+    height: 32px;
+    text-align: center;
+    border: none;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    color: #0f172a;
+    background: #ffffff;
+  }
+
+  .adj-stepper-input::-webkit-inner-spin-button,
+  .adj-stepper-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  
+  .variance-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    min-width: 48px;
+    transition: all 0.2s ease;
+  }
+  
+  .variance-zero { 
+    background: #f3f4f6; 
+    color: #6b7280; 
+    border: 1px solid #e5e7eb;
+  }
+  
+  .variance-positive { 
+    background: #dcfce7; 
+    color: #15803d; 
+    border: 1px solid #bbf7d0;
+  }
+  
+  .variance-negative { 
+    background: #fee2e2; 
+    color: #b91c1c; 
+    border: 1px solid #fecaca;
+  }
+
+  .adj-kpi-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .adj-kpi-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  .adj-kpi-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .adj-kpi-meta span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+  }
+
+  .adj-kpi-meta strong {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0f172a;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .adj-kpi-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .adj-row-reconciled {
+    animation: adj-flash 1.2s ease-out;
+  }
+
+  @keyframes adj-flash {
+    0% { background-color: rgba(16, 185, 129, 0.18); }
+    100% { background-color: transparent; }
+  }
+</style>
+
+<!-- ==========================================
+     PHYSICAL INVENTORY ADJUSTMENT COMPONENT
+     Odoo-style Count Reconciliation & Variance
+     ========================================== -->
+<section id="view-adjustment" class="view-panel">
+  <!-- View Header -->
+  <div class="view-header">
+    <div>
+      <h1>Physical Inventory Adjustment</h1>
+      <p class="text-muted">Reconcile theoretical system quantities with actual counted warehouse stock</p>
+    </div>
+    <div class="view-actions" style="display: flex; gap: 10px; align-items: center;">
+      <button class="btn btn-primary" onclick="applyAllAdjustments()">
+        <i class="fa-solid fa-check-double"></i> Apply All Adjustments
+      </button>
+      <button class="btn btn-outline" onclick="loadAdjustmentTable()">
+        <i class="fa-solid fa-rotate"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Search & Instructions Toolbar -->
+  <div class="filter-toolbar" style="margin-bottom: 20px;">
+    <div class="search-box" style="position: relative; max-width: 460px;">
+      <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+      <input 
+        type="text" 
+        id="adj-search-input" 
+        class="form-control" 
+        style="padding-left: 38px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding-top: 9px; padding-bottom: 9px;"
+        placeholder="Filter products for stock count reconciliation..." 
+        oninput="filterAdjustmentTable()"
+      >
+    </div>
+  </div>
+
+  <!-- Adjustment Table -->
+  <div class="card table-card">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product &amp; SKU</th>
+            <th>Location</th>
+            <th class="text-right" style="text-align: right;">Theoretical (System)</th>
+            <th class="text-center" style="width: 180px; text-align: center;">Counted (Physical)</th>
+            <th class="text-center" style="text-align: center;">Variance (Diff)</th>
+            <th class="text-right" style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="adjustment-table-body">
+          <!-- Populated dynamically via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<script>
+  let adjustmentProducts = [];
+
+  async function loadAdjustmentTable() {
+    try {
+      const res = await fetch("/api/products");
+      if (res.ok) {
+        adjustmentProducts = await res.json();
+        renderAdjustmentRows(adjustmentProducts);
+      } else {
+        throw new Error("API failed");
+      }
+    } catch (err) {
+      console.warn("Failed to load products from API for adjustment, using fallback.", err);
+      if (!adjustmentProducts || adjustmentProducts.length === 0) {
+        adjustmentProducts = [
+          { id: 1, code: 'DESK001', name: 'Desk', on_hand: 50, free_to_use: 45, unit_cost: 3000 },
+          { id: 2, code: 'TBL002', name: 'Table', on_hand: 50, free_to_use: 50, unit_cost: 3000 },
+          { id: 3, code: 'CHR003', name: 'Ergonomic Chair', on_hand: 25, free_to_use: 20, unit_cost: 1500 },
+          { id: 4, code: 'LMP004', name: 'LED Desk Lamp', on_hand: 0, free_to_use: 0, unit_cost: 800 }
+        ];
+      }
+      renderAdjustmentRows(adjustmentProducts);
+    }
+  }
+
+  function renderAdjustmentRows(products) {
+    const tbody = document.getElementById("adjustment-table-body");
+    if (!tbody) return;
+
+    if (!products || products.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 32px; color: #64748b;">
+            <i class="fa-solid fa-boxes-stacked" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+            No products found for inventory adjustment.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = products.map(p => `
+      <tr id="adj-row-${p.id}" data-pid="${p.id}" data-name="${p.name}">
+        <td>
+          <strong>${escapeAdjHtml(p.name)}</strong>
+          <small class="text-muted font-mono d-block" style="display:block; font-size:11px; color: #64748b;">SKU: ${escapeAdjHtml(p.code || 'N/A')}</small>
+        </td>
+        <td><span class="badge" style="background:#f1f5f9; color:#475569; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:600;"><i class="fa-solid fa-warehouse"></i> WH/Stock1</span></td>
+        <td class="text-right font-mono font-bold" id="adj-theo-${p.id}" style="text-align: right; font-weight: 700;">${p.on_hand}</td>
+        <td class="text-center" style="text-align: center;">
+          <div class="adj-stepper">
+            <button type="button" class="adj-stepper-btn" onclick="stepAdjustmentQty(${p.id}, -1)" title="Decrease count">&minus;</button>
+            <input type="number" class="adj-stepper-input" id="adj-count-${p.id}" value="${p.on_hand}" min="0" oninput="recalcRowVariance(${p.id})">
+            <button type="button" class="adj-stepper-btn" onclick="stepAdjustmentQty(${p.id}, 1)" title="Increase count">&plus;</button>
+          </div>
+        </td>
+        <td class="text-center" id="adj-var-container-${p.id}" style="text-align: center;">
+          <span class="variance-badge variance-zero" id="adj-var-${p.id}">0</span>
+        </td>
+        <td class="text-right" style="text-align: right;">
+          <button class="btn btn-outline btn-sm" id="btn-apply-${p.id}" onclick="applySingleAdjustment(${p.id})" style="padding: 5px 12px; font-size: 13px; font-weight: 600;">
+            Apply
+          </button>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  function stepAdjustmentQty(pid, delta) {
+    const input = document.getElementById(`adj-count-${pid}`);
+    if (!input) return;
+    let val = parseInt(input.value) || 0;
+    val = Math.max(0, val + delta);
+    input.value = val;
+    recalcRowVariance(pid);
+  }
+
+  function recalcRowVariance(pid) {
+    const theo = parseInt(document.getElementById(`adj-theo-${pid}`).textContent) || 0;
+    const counted = parseInt(document.getElementById(`adj-count-${pid}`).value) || 0;
+    const diff = counted - theo;
+    const badge = document.getElementById(`adj-var-${pid}`);
+    if (!badge) return;
+
+    badge.className = "variance-badge";
+    if (diff === 0) {
+      badge.classList.add("variance-zero");
+      badge.textContent = "0";
+    } else if (diff > 0) {
+      badge.classList.add("variance-positive");
+      badge.textContent = `+${diff}`;
+    } else {
+      badge.classList.add("variance-negative");
+      badge.textContent = `${diff}`;
+    }
+  }
+
+  function filterAdjustmentTable() {
+    const query = (document.getElementById("adj-search-input")?.value || "").toLowerCase().trim();
+    adjustmentProducts.forEach(p => {
+      const row = document.getElementById(`adj-row-${p.id}`);
+      if (!row) return;
+      const match = (p.name || '').toLowerCase().includes(query) || (p.code || '').toLowerCase().includes(query);
+      row.style.display = match ? "" : "none";
+    });
+  }
+
+  async function applySingleAdjustment(pid) {
+    const counted = parseInt(document.getElementById(`adj-count-${pid}`).value) || 0;
+    const theo = parseInt(document.getElementById(`adj-theo-${pid}`).textContent) || 0;
+    const diff = counted - theo;
+
+    if (diff === 0) {
+      alert("Counted quantity matches theoretical stock. No adjustment needed.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/adjustment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: pid, counted_qty: counted, difference: diff })
+      });
+      
+      let data = {};
+      if (res.ok) {
+        data = await res.json();
+      } else {
+        // Fallback to updating stock directly if /api/adjustment endpoint is not present
+        const fallbackRes = await fetch(`/api/products/${pid}/stock`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ on_hand: counted, free_to_use: counted })
+        });
+        if (fallbackRes.ok) {
+          data = { success: true, message: "Physical stock updated successfully!" };
+        }
+      }
+
+      if (data.success) {
+        alert("✅ " + (data.message || "Stock adjusted successfully!"));
+        const row = document.getElementById(`adj-row-${pid}`);
+        if (row) {
+          row.classList.remove('adj-row-reconciled');
+          void row.offsetWidth;
+          row.classList.add('adj-row-reconciled');
+        }
+        loadAdjustmentTable();
+        if (typeof loadStockTable === "function") loadStockTable();
+        if (typeof loadMoveHistory === "function") loadMoveHistory();
+        if (typeof loadDashboardStats === "function") loadDashboardStats();
+      } else {
+        alert(data.message || "Failed to adjust stock");
+      }
+    } catch (e) {
+      console.error("Error sending adjustment", e);
+      alert("Error sending adjustment");
+    }
+  }
+
+  async function applyAllAdjustments() {
+    const rows = document.querySelectorAll("#adjustment-table-body tr");
+    let count = 0;
+    for (const r of rows) {
+      const pid = r.getAttribute("data-pid");
+      if (!pid) continue;
+      const theo = parseInt(document.getElementById(`adj-theo-${pid}`).textContent) || 0;
+      const counted = parseInt(document.getElementById(`adj-count-${pid}`).value) || 0;
+      if (counted !== theo) {
+        try {
+          const res = await fetch("/api/adjustment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ product_id: parseInt(pid), counted_qty: counted, difference: counted - theo })
+          });
+          if (!res.ok) {
+            await fetch(`/api/products/${pid}/stock`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ on_hand: counted, free_to_use: counted })
+            });
+          }
+          count++;
+        } catch (err) {
+          console.error(`Failed to adjust product ${pid}`, err);
+        }
+      }
+    }
+    if (count > 0) {
+      alert(`✅ Reconciled ${count} products successfully!`);
+      loadAdjustmentTable();
+      if (typeof loadStockTable === "function") loadStockTable();
+      if (typeof loadMoveHistory === "function") loadMoveHistory();
+      if (typeof loadDashboardStats === "function") loadDashboardStats();
+    } else {
+      alert("All products are already matching theoretical stock.");
+    }
+  }
+
+  function escapeAdjHtml(str) {
+    if (str === null || str === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+  }
+
+  // Auto-load on script execution
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadAdjustmentTable);
+  } else {
+    loadAdjustmentTable();
+  }
+</script>

@@ -265,13 +265,49 @@
       <section id="view-adjustment" class="view-panel">
         <div class="view-header">
           <div>
-            <h1>Inventory Adjustment</h1>
-            <p class="text-muted">Reconcile theoretical stock with counted physical stock</p>
+            <h1>Physical Inventory Adjustment</h1>
+            <p class="text-muted">Reconcile theoretical system quantities with actual counted warehouse stock</p>
+          </div>
+          <div class="view-actions" style="display: flex; gap: 10px; align-items: center;">
+            <button class="btn btn-primary" onclick="applyAllAdjustments()">
+              <i class="fa-solid fa-check-double"></i> Apply All Adjustments
+            </button>
+            <button class="btn btn-outline" onclick="loadAdjustmentTable()">
+              <i class="fa-solid fa-rotate"></i> Refresh
+            </button>
           </div>
         </div>
-        <div class="card p-4">
-          <p>Select any item from the <strong>Stock</strong> view to conduct instant stock reconciliation, count verification, and audit updates.</p>
-          <button class="btn btn-primary mt-2" onclick="navigateTo('stock')"><i class="fa-solid fa-cubes"></i> Go to Stock View</button>
+
+        <div class="filter-toolbar" style="margin-bottom: 20px;">
+          <div class="search-box" style="position: relative; max-width: 460px;">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input 
+              type="text" 
+              id="adj-search-input" 
+              placeholder="Filter products for stock count reconciliation..." 
+              oninput="filterAdjustmentTable()"
+            >
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Product &amp; SKU</th>
+                  <th>Location</th>
+                  <th class="text-right">Theoretical (System)</th>
+                  <th class="text-center" style="width: 180px;">Counted (Physical)</th>
+                  <th class="text-center">Variance (Diff)</th>
+                  <th class="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="adjustment-table-body">
+                <!-- Populated dynamically via JS -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
