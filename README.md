@@ -124,5 +124,3 @@ stocksense/
 
 ---
 
-## 📄 License
-This project was developed for the Odoo Hackathon. Distributed under the MIT License.
