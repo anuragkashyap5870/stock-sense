@@ -1,0 +1,1284 @@
+<!-- Google Fonts: Plus Jakarta Sans & Inter -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  /* ==========================================================================
+     StockSense Component Scoped Styles (Odoo Theme)
+     Theme: Clean Light Theme (#F8FAFC, #FFFFFF, #E2E8F0)
+     Brand Colors: Primary #714B67 (Odoo Purple), Accent #00A09D (Teal)
+     Typography: Plus Jakarta Sans / Inter
+     Buttons: 8px radius, 10px 20px padding, font-weight 600
+     ========================================================================== */
+
+  :root {
+    --ss-bg: #F8FAFC;
+    --ss-surface: #FFFFFF;
+    --ss-border: #E2E8F0;
+    --ss-primary: #714B67;
+    --ss-primary-hover: #5A3951;
+    --ss-primary-light: #F4EEF2;
+    --ss-accent: #00A09D;
+    --ss-accent-hover: #008784;
+    --ss-accent-light: #E6F6F6;
+    --ss-text-main: #0F172A;
+    --ss-text-muted: #64748B;
+    --ss-text-sub: #475569;
+    --ss-radius: 8px;
+    --ss-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+    --ss-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+    --ss-shadow-lg: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+  }
+
+  #view-stock.view-panel {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--ss-bg);
+    color: var(--ss-text-main);
+    padding: 24px 32px;
+    min-height: 100%;
+    box-sizing: border-box;
+  }
+
+  #view-stock * {
+    box-sizing: border-box;
+  }
+
+  /* Header Section */
+  .ss-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .ss-title-group h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ss-text-main);
+    margin: 0 0 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .ss-title-badge {
+    background-color: var(--ss-primary-light);
+    color: var(--ss-primary);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+  }
+
+  .ss-title-group p {
+    font-size: 14px;
+    color: var(--ss-text-muted);
+    margin: 0;
+  }
+
+  /* Buttons */
+  .ss-btn {
+    border-radius: var(--ss-radius);
+    padding: 10px 20px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+    text-decoration: none;
+    line-height: 1.4;
+    user-select: none;
+  }
+
+  .ss-btn-primary {
+    background-color: var(--ss-primary);
+    color: #FFFFFF;
+    box-shadow: 0 2px 4px rgba(113, 75, 103, 0.25);
+  }
+
+  .ss-btn-primary:hover {
+    background-color: var(--ss-primary-hover);
+    box-shadow: 0 4px 8px rgba(113, 75, 103, 0.35);
+    transform: translateY(-1px);
+  }
+
+  .ss-btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .ss-btn-outline {
+    background-color: var(--ss-surface);
+    color: var(--ss-primary);
+    border: 1px solid var(--ss-primary);
+  }
+
+  .ss-btn-outline:hover {
+    background-color: var(--ss-primary);
+    color: #FFFFFF;
+    box-shadow: 0 3px 6px rgba(113, 75, 103, 0.2);
+    transform: translateY(-1px);
+  }
+
+  .ss-btn-secondary {
+    background-color: var(--ss-surface);
+    color: var(--ss-text-sub);
+    border: 1px solid var(--ss-border);
+  }
+
+  .ss-btn-secondary:hover {
+    background-color: #F1F5F9;
+    color: var(--ss-text-main);
+  }
+
+  .ss-btn-sm {
+    padding: 7px 14px;
+    font-size: 13px;
+    border-radius: var(--ss-radius);
+  }
+
+  /* Toolbar & Search Bar */
+  .ss-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .ss-search-box {
+    position: relative;
+    flex: 1;
+    max-width: 440px;
+    min-width: 260px;
+  }
+
+  .ss-search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ss-text-muted);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+  }
+
+  .ss-search-input {
+    width: 100%;
+    padding: 10px 38px 10px 40px;
+    border-radius: var(--ss-radius);
+    border: 1px solid var(--ss-border);
+    background-color: var(--ss-surface);
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ss-text-main);
+    transition: all 0.2s ease;
+    box-shadow: var(--ss-shadow-sm);
+  }
+
+  .ss-search-input::placeholder {
+    color: #94A3B8;
+  }
+
+  .ss-search-input:focus {
+    outline: none;
+    border-color: var(--ss-accent);
+    box-shadow: 0 0 0 3px rgba(0, 160, 157, 0.15);
+  }
+
+  .ss-search-clear {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--ss-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: none;
+    border-radius: 50%;
+  }
+
+  .ss-search-clear:hover {
+    color: var(--ss-text-main);
+    background-color: #F1F5F9;
+  }
+
+  .ss-stats-pill {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--ss-surface);
+    border: 1px solid var(--ss-border);
+    padding: 8px 16px;
+    border-radius: var(--ss-radius);
+    font-size: 13px;
+    color: var(--ss-text-muted);
+  }
+
+  .ss-stats-pill strong {
+    color: var(--ss-text-main);
+    font-weight: 700;
+  }
+
+  /* Table Card Container */
+  .ss-card {
+    background-color: var(--ss-surface);
+    border: 1px solid var(--ss-border);
+    border-radius: 12px;
+    box-shadow: var(--ss-shadow-sm);
+    overflow: hidden;
+  }
+
+  .ss-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .ss-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 14px;
+  }
+
+  .ss-table thead {
+    background-color: #F8FAFC;
+    border-bottom: 1px solid var(--ss-border);
+  }
+
+  .ss-table th {
+    padding: 14px 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--ss-text-muted);
+    white-space: nowrap;
+  }
+
+  .ss-table tbody tr {
+    border-bottom: 1px solid var(--ss-border);
+    transition: background-color 0.15s ease;
+  }
+
+  .ss-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .ss-table tbody tr:hover {
+    background-color: #FBFBFE;
+  }
+
+  .ss-table td {
+    padding: 16px 20px;
+    vertical-align: middle;
+    color: var(--ss-text-sub);
+  }
+
+  /* Product Column */
+  .ss-product-cell {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .ss-product-icon-wrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background-color: var(--ss-primary-light);
+    color: var(--ss-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .ss-product-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ss-product-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ss-text-main);
+  }
+
+  .ss-product-sku {
+    font-size: 12px;
+    color: var(--ss-text-muted);
+    font-family: 'Inter', monospace;
+    margin-top: 2px;
+  }
+
+  /* Cost & Stock Badges */
+  .ss-cost {
+    font-weight: 600;
+    color: var(--ss-text-main);
+    font-family: 'Inter', sans-serif;
+  }
+
+  .ss-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .ss-badge-onhand {
+    background-color: #F1F5F9;
+    color: #334155;
+    border: 1px solid #CBD5E1;
+  }
+
+  .ss-badge-freetouse {
+    background-color: var(--ss-accent-light);
+    color: var(--ss-accent);
+    border: 1px solid rgba(0, 160, 157, 0.25);
+  }
+
+  .ss-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+  }
+
+  /* Empty state */
+  .ss-empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--ss-text-muted);
+  }
+
+  .ss-empty-icon {
+    margin-bottom: 12px;
+    color: #94A3B8;
+  }
+
+  /* Flash row animation on update */
+  @keyframes ss-flash-success {
+    0% { background-color: rgba(0, 160, 157, 0.18); }
+    100% { background-color: transparent; }
+  }
+
+  .ss-row-updated {
+    animation: ss-flash-success 1.5s ease-out;
+  }
+
+  /* ==========================================================================
+     Modal Styles
+     ========================================================================== */
+  .ss-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    padding: 16px;
+  }
+
+  .ss-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .ss-modal-card {
+    background: var(--ss-surface);
+    border: 1px solid var(--ss-border);
+    border-radius: 12px;
+    box-shadow: var(--ss-shadow-lg);
+    width: 100%;
+    max-width: 500px;
+    transform: scale(0.95) translateY(10px);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+  }
+
+  .ss-modal-overlay.active .ss-modal-card {
+    transform: scale(1) translateY(0);
+  }
+
+  .ss-modal-header {
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--ss-border);
+    background-color: #FAFAFC;
+  }
+
+  .ss-modal-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ss-text-main);
+  }
+
+  .ss-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    color: var(--ss-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+  }
+
+  .ss-modal-close:hover {
+    color: var(--ss-text-main);
+    background-color: #E2E8F0;
+  }
+
+  .ss-modal-body {
+    padding: 24px;
+  }
+
+  .ss-modal-product-summary {
+    background: #F8FAFC;
+    border: 1px solid var(--ss-border);
+    border-radius: var(--ss-radius);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .ss-modal-product-title {
+    font-weight: 600;
+    color: var(--ss-text-main);
+    font-size: 15px;
+  }
+
+  .ss-modal-product-sub {
+    font-size: 12px;
+    color: var(--ss-text-muted);
+    margin-top: 2px;
+  }
+
+  .ss-form-group {
+    margin-bottom: 18px;
+  }
+
+  .ss-form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ss-text-main);
+    margin-bottom: 6px;
+  }
+
+  .ss-form-label span.required {
+    color: #DC2626;
+  }
+
+  .ss-input-stepper {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--ss-border);
+    border-radius: var(--ss-radius);
+    background-color: var(--ss-surface);
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .ss-input-stepper:focus-within {
+    border-color: var(--ss-accent);
+    box-shadow: 0 0 0 3px rgba(0, 160, 157, 0.15);
+  }
+
+  .ss-stepper-btn {
+    width: 42px;
+    height: 42px;
+    background: #F8FAFC;
+    border: none;
+    color: var(--ss-text-sub);
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease;
+  }
+
+  .ss-stepper-btn:hover {
+    background-color: #E2E8F0;
+    color: var(--ss-text-main);
+  }
+
+  .ss-form-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--ss-border);
+    border-radius: var(--ss-radius);
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ss-text-main);
+    background-color: var(--ss-surface);
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .ss-input-stepper .ss-form-input {
+    border: none;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .ss-form-input:focus {
+    outline: none;
+    border-color: var(--ss-accent);
+    box-shadow: 0 0 0 3px rgba(0, 160, 157, 0.15);
+  }
+
+  .ss-form-hint {
+    font-size: 12px;
+    color: var(--ss-text-muted);
+    margin-top: 5px;
+  }
+
+  .ss-form-error {
+    color: #DC2626;
+    font-size: 12px;
+    margin-top: 4px;
+    display: none;
+  }
+
+  .ss-modal-footer {
+    padding: 16px 24px;
+    background-color: #FAFAFC;
+    border-top: 1px solid var(--ss-border);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  /* Toast notification */
+  .ss-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #0F172A;
+    color: #FFFFFF;
+    padding: 12px 20px;
+    border-radius: var(--ss-radius);
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: var(--ss-shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 10000;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+  }
+
+  .ss-toast.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .ss-toast-icon {
+    color: var(--ss-accent);
+  }
+</style>
+
+<section id="view-stock" class="view-panel">
+  <!-- 1. Header Section -->
+  <header class="ss-header">
+    <div class="ss-title-group">
+      <h1>
+        Products & Current Stock
+        <span class="ss-title-badge">Odoo Inventory</span>
+      </h1>
+      <p>Real-time warehouse stock tracking and availability adjustments</p>
+    </div>
+    <div>
+      <button type="button" class="ss-btn ss-btn-primary" id="btn-new-product" onclick="openNewProductModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        New Product
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. Search & Filter Bar -->
+  <div class="ss-toolbar">
+    <div class="ss-search-box">
+      <span class="ss-search-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </span>
+      <input 
+        type="text" 
+        id="ss-search-input" 
+        class="ss-search-input" 
+        placeholder="Search by product name or SKU (e.g. Desk, CHR-003)..."
+        oninput="handleStockSearch(this.value)"
+      >
+      <button type="button" id="ss-search-clear" class="ss-search-clear" onclick="clearStockSearch()" aria-label="Clear search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="ss-stats-pill">
+      <span>Total Products: <strong id="ss-total-count">4</strong></span>
+      <span>•</span>
+      <span>Total Units On Hand: <strong id="ss-total-onhand">263</strong></span>
+    </div>
+  </div>
+
+  <!-- 3. Clean Products Table Card -->
+  <div class="ss-card">
+    <div class="ss-table-wrapper">
+      <table class="ss-table" id="ss-stock-table">
+        <thead>
+          <tr>
+            <th style="min-width: 240px;">Product</th>
+            <th style="min-width: 140px;">Per Unit Cost</th>
+            <th style="min-width: 140px;">On Hand</th>
+            <th style="min-width: 140px;">Free to Use</th>
+            <th style="text-align: right; min-width: 150px;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="ss-table-body">
+          <!-- Row 1: Desk -->
+          <tr data-product-id="prod-1" data-name="Desk" data-sku="DSK-1001" data-cost="3000" data-onhand="45" data-freetouse="38">
+            <td>
+              <div class="ss-product-cell">
+                <div class="ss-product-icon-wrap">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="12" rx="2"></rect>
+                    <line x1="7" y1="20" x2="7" y2="16"></line>
+                    <line x1="17" y1="20" x2="17" y2="16"></line>
+                  </svg>
+                </div>
+                <div class="ss-product-info">
+                  <span class="ss-product-name">Desk</span>
+                  <span class="ss-product-sku">SKU: DSK-1001</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="ss-cost">3000 Rs</span>
+            </td>
+            <td>
+              <span class="ss-badge ss-badge-onhand">
+                <span class="ss-dot"></span>
+                <span class="val-onhand">45</span> Units
+              </span>
+            </td>
+            <td>
+              <span class="ss-badge ss-badge-freetouse">
+                <span class="ss-dot"></span>
+                <span class="val-freetouse">38</span> Available
+              </span>
+            </td>
+            <td style="text-align: right;">
+              <button 
+                type="button" 
+                class="ss-btn ss-btn-outline ss-btn-sm" 
+                onclick="openUpdateStockModal('prod-1')"
+              >
+                Update Stock
+              </button>
+            </td>
+          </tr>
+
+          <!-- Row 2: Table -->
+          <tr data-product-id="prod-2" data-name="Table" data-sku="TAB-2002" data-cost="4500" data-onhand="28" data-freetouse="20">
+            <td>
+              <div class="ss-product-cell">
+                <div class="ss-product-icon-wrap">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="2" y1="6" x2="22" y2="6"></line>
+                    <line x1="4" y1="6" x2="4" y2="20"></line>
+                    <line x1="20" y1="6" x2="20" y2="20"></line>
+                    <line x1="8" y1="6" x2="8" y2="12"></line>
+                    <line x1="16" y1="6" x2="16" y2="12"></line>
+                  </svg>
+                </div>
+                <div class="ss-product-info">
+                  <span class="ss-product-name">Table</span>
+                  <span class="ss-product-sku">SKU: TAB-2002</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="ss-cost">4500 Rs</span>
+            </td>
+            <td>
+              <span class="ss-badge ss-badge-onhand">
+                <span class="ss-dot"></span>
+                <span class="val-onhand">28</span> Units
+              </span>
+            </td>
+            <td>
+              <span class="ss-badge ss-badge-freetouse">
+                <span class="ss-dot"></span>
+                <span class="val-freetouse">20</span> Available
+              </span>
+            </td>
+            <td style="text-align: right;">
+              <button 
+                type="button" 
+                class="ss-btn ss-btn-outline ss-btn-sm" 
+                onclick="openUpdateStockModal('prod-2')"
+              >
+                Update Stock
+              </button>
+            </td>
+          </tr>
+
+          <!-- Row 3: Office Chair -->
+          <tr data-product-id="prod-3" data-name="Office Chair" data-sku="CHR-3003" data-cost="5200" data-onhand="70" data-freetouse="55">
+            <td>
+              <div class="ss-product-cell">
+                <div class="ss-product-icon-wrap">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"></path>
+                    <path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"></path>
+                    <path d="M4 10h16"></path>
+                    <line x1="12" y1="14" x2="12" y2="20"></line>
+                  </svg>
+                </div>
+                <div class="ss-product-info">
+                  <span class="ss-product-name">Office Chair</span>
+                  <span class="ss-product-sku">SKU: CHR-3003</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="ss-cost">5200 Rs</span>
+            </td>
+            <td>
+              <span class="ss-badge ss-badge-onhand">
+                <span class="ss-dot"></span>
+                <span class="val-onhand">70</span> Units
+              </span>
+            </td>
+            <td>
+              <span class="ss-badge ss-badge-freetouse">
+                <span class="ss-dot"></span>
+                <span class="val-freetouse">55</span> Available
+              </span>
+            </td>
+            <td style="text-align: right;">
+              <button 
+                type="button" 
+                class="ss-btn ss-btn-outline ss-btn-sm" 
+                onclick="openUpdateStockModal('prod-3')"
+              >
+                Update Stock
+              </button>
+            </td>
+          </tr>
+
+          <!-- Row 4: LED Desk Lamp -->
+          <tr data-product-id="prod-4" data-name="LED Desk Lamp" data-sku="LMP-4004" data-cost="1800" data-onhand="120" data-freetouse="110">
+            <td>
+              <div class="ss-product-cell">
+                <div class="ss-product-icon-wrap">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="9" y1="18" x2="15" y2="18"></line>
+                    <line x1="12" y1="18" x2="12" y2="22"></line>
+                    <path d="M12 2a6 6 0 0 0-6 6c0 2.2 1.2 4.1 3 5.1V15a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1.9c1.8-1 3-2.9 3-5.1a6 6 0 0 0-6-6z"></path>
+                  </svg>
+                </div>
+                <div class="ss-product-info">
+                  <span class="ss-product-name">LED Desk Lamp</span>
+                  <span class="ss-product-sku">SKU: LMP-4004</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="ss-cost">1800 Rs</span>
+            </td>
+            <td>
+              <span class="ss-badge ss-badge-onhand">
+                <span class="ss-dot"></span>
+                <span class="val-onhand">120</span> Units
+              </span>
+            </td>
+            <td>
+              <span class="ss-badge ss-badge-freetouse">
+                <span class="ss-dot"></span>
+                <span class="val-freetouse">110</span> Available
+              </span>
+            </td>
+            <td style="text-align: right;">
+              <button 
+                type="button" 
+                class="ss-btn ss-btn-outline ss-btn-sm" 
+                onclick="openUpdateStockModal('prod-4')"
+              >
+                Update Stock
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Empty state if search returns zero results -->
+      <div id="ss-empty-state" class="ss-empty-state" style="display: none;">
+        <div class="ss-empty-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+        </div>
+        <h3 style="margin: 0 0 6px 0; font-size: 16px; color: var(--ss-text-main);">No matching products</h3>
+        <p style="margin: 0; font-size: 13px;">Check the product name or SKU and try searching again.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. "Update Stock" Modal -->
+  <div id="modal-update-stock" class="ss-modal-overlay" onclick="handleStockBackdropClick(event, 'modal-update-stock')">
+    <div class="ss-modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-update-title">
+      <div class="ss-modal-header">
+        <h2 id="modal-update-title" class="ss-modal-title">Update Stock & Quantities</h2>
+        <button type="button" class="ss-modal-close" onclick="closeUpdateStockModal()" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="form-update-stock" onsubmit="handleStockSave(event)">
+        <div class="ss-modal-body">
+          <!-- Selected Product Summary Box -->
+          <div class="ss-modal-product-summary">
+            <div>
+              <div class="ss-modal-product-title" id="update-modal-prod-name">Product Name</div>
+              <div class="ss-modal-product-sub" id="update-modal-prod-sku">SKU: ---</div>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 11px; text-transform: uppercase; color: var(--ss-text-muted); font-weight: 700;">Cost</span>
+              <div class="ss-cost" id="update-modal-prod-cost" style="font-size: 14px;">0 Rs</div>
+            </div>
+          </div>
+
+          <input type="hidden" id="update-product-id">
+
+          <!-- On Hand Input -->
+          <div class="ss-form-group">
+            <label class="ss-form-label" for="input-on-hand">
+              On Hand (Total Physical Stock) <span class="required">*</span>
+            </label>
+            <div class="ss-input-stepper">
+              <button type="button" class="ss-stepper-btn" onclick="stepStockValue('input-on-hand', -1)">&minus;</button>
+              <input 
+                type="number" 
+                id="input-on-hand" 
+                class="ss-form-input" 
+                min="0" 
+                required 
+                oninput="validateStockQuantities()"
+              >
+              <button type="button" class="ss-stepper-btn" onclick="stepStockValue('input-on-hand', 1)">&plus;</button>
+            </div>
+            <div class="ss-form-hint">Total physical units located inside warehouse storage.</div>
+          </div>
+
+          <!-- Free to Use Input -->
+          <div class="ss-form-group">
+            <label class="ss-form-label" for="input-free-to-use">
+              Free to Use (Available Stock) <span class="required">*</span>
+            </label>
+            <div class="ss-input-stepper">
+              <button type="button" class="ss-stepper-btn" onclick="stepStockValue('input-free-to-use', -1)">&minus;</button>
+              <input 
+                type="number" 
+                id="input-free-to-use" 
+                class="ss-form-input" 
+                min="0" 
+                required 
+                oninput="validateStockQuantities()"
+              >
+              <button type="button" class="ss-stepper-btn" onclick="stepStockValue('input-free-to-use', 1)">&plus;</button>
+            </div>
+            <div class="ss-form-hint">Unreserved stock immediately available for sales or allocation.</div>
+            <div id="stock-quantity-error" class="ss-form-error">Free to Use quantity cannot exceed total On Hand quantity.</div>
+          </div>
+
+          <!-- Inventory Adjustment Note (Odoo Standard) -->
+          <div class="ss-form-group" style="margin-bottom: 0;">
+            <label class="ss-form-label" for="input-stock-reason">Adjustment Reason / Reference</label>
+            <input 
+              type="text" 
+              id="input-stock-reason" 
+              class="ss-form-input" 
+              placeholder="e.g. Cycle Count, Received Shipment, Scrap"
+            >
+          </div>
+        </div>
+
+        <div class="ss-modal-footer">
+          <button type="button" class="ss-btn ss-btn-secondary" onclick="closeUpdateStockModal()">Cancel</button>
+          <button type="submit" id="btn-save-stock" class="ss-btn ss-btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. "New Product" Modal -->
+  <div id="modal-new-product" class="ss-modal-overlay" onclick="handleStockBackdropClick(event, 'modal-new-product')">
+    <div class="ss-modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-new-title">
+      <div class="ss-modal-header">
+        <h2 id="modal-new-title" class="ss-modal-title">Create New Product</h2>
+        <button type="button" class="ss-modal-close" onclick="closeNewProductModal()" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="form-new-product" onsubmit="handleNewProductSubmit(event)">
+        <div class="ss-modal-body">
+          <div class="ss-form-group">
+            <label class="ss-form-label" for="new-prod-name">Product Name <span class="required">*</span></label>
+            <input type="text" id="new-prod-name" class="ss-form-input" placeholder="e.g. Ergonomic Keyboard" required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="ss-form-group">
+              <label class="ss-form-label" for="new-prod-sku">SKU Code <span class="required">*</span></label>
+              <input type="text" id="new-prod-sku" class="ss-form-input" placeholder="e.g. ACC-5005" required>
+            </div>
+            <div class="ss-form-group">
+              <label class="ss-form-label" for="new-prod-cost">Per Unit Cost (Rs) <span class="required">*</span></label>
+              <input type="number" id="new-prod-cost" class="ss-form-input" placeholder="3000" min="0" required>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 0;">
+            <div class="ss-form-group" style="margin-bottom: 0;">
+              <label class="ss-form-label" for="new-prod-onhand">Initial On Hand <span class="required">*</span></label>
+              <input type="number" id="new-prod-onhand" class="ss-form-input" min="0" value="0" required>
+            </div>
+            <div class="ss-form-group" style="margin-bottom: 0;">
+              <label class="ss-form-label" for="new-prod-freetouse">Free to Use <span class="required">*</span></label>
+              <input type="number" id="new-prod-freetouse" class="ss-form-input" min="0" value="0" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="ss-modal-footer">
+          <button type="button" class="ss-btn ss-btn-secondary" onclick="closeNewProductModal()">Cancel</button>
+          <button type="submit" class="ss-btn ss-btn-primary">Create Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="ss-toast" class="ss-toast">
+    <span class="ss-toast-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+    </span>
+    <span id="ss-toast-message">Inventory updated successfully.</span>
+  </div>
+</section>
+
+<script>
+  /* ==========================================================================
+     StockSense Dynamic Logic & Interaction Handlers
+     ========================================================================== */
+
+  // 1. Search Bar Filter
+  function handleStockSearch(query) {
+    const term = (query || '').trim().toLowerCase();
+    const rows = document.querySelectorAll('#ss-table-body tr');
+    const clearBtn = document.getElementById('ss-search-clear');
+    const emptyState = document.getElementById('ss-empty-state');
+    let visibleCount = 0;
+
+    if (clearBtn) {
+      clearBtn.style.display = term ? 'block' : 'none';
+    }
+
+    rows.forEach(row => {
+      const name = (row.getAttribute('data-name') || '').toLowerCase();
+      const sku = (row.getAttribute('data-sku') || '').toLowerCase();
+      if (name.includes(term) || sku.includes(term)) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    if (emptyState) {
+      emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+  }
+
+  function clearStockSearch() {
+    const input = document.getElementById('ss-search-input');
+    if (input) {
+      input.value = '';
+      handleStockSearch('');
+      input.focus();
+    }
+  }
+
+  // 2. Update Stock Modal Flow
+  function openUpdateStockModal(productId) {
+    const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+    if (!row) return;
+
+    const name = row.getAttribute('data-name');
+    const sku = row.getAttribute('data-sku');
+    const cost = row.getAttribute('data-cost');
+    const onHand = row.getAttribute('data-onhand');
+    const freeToUse = row.getAttribute('data-freetouse');
+
+    document.getElementById('update-product-id').value = productId;
+    document.getElementById('update-modal-prod-name').textContent = name;
+    document.getElementById('update-modal-prod-sku').textContent = 'SKU: ' + sku;
+    document.getElementById('update-modal-prod-cost').textContent = cost + ' Rs';
+
+    document.getElementById('input-on-hand').value = onHand;
+    document.getElementById('input-free-to-use').value = freeToUse;
+    document.getElementById('input-stock-reason').value = '';
+
+    const errorEl = document.getElementById('stock-quantity-error');
+    if (errorEl) errorEl.style.display = 'none';
+
+    const modal = document.getElementById('modal-update-stock');
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeUpdateStockModal() {
+    const modal = document.getElementById('modal-update-stock');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function stepStockValue(inputId, delta) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    let currentVal = parseInt(input.value, 10) || 0;
+    currentVal = Math.max(0, currentVal + delta);
+    input.value = currentVal;
+    validateStockQuantities();
+  }
+
+  function validateStockQuantities() {
+    const onHand = parseInt(document.getElementById('input-on-hand').value, 10) || 0;
+    const freeToUse = parseInt(document.getElementById('input-free-to-use').value, 10) || 0;
+    const errorEl = document.getElementById('stock-quantity-error');
+    const saveBtn = document.getElementById('btn-save-stock');
+
+    if (freeToUse > onHand) {
+      if (errorEl) errorEl.style.display = 'block';
+      if (saveBtn) saveBtn.disabled = true;
+      return false;
+    } else {
+      if (errorEl) errorEl.style.display = 'none';
+      if (saveBtn) saveBtn.disabled = false;
+      return true;
+    }
+  }
+
+  function handleStockSave(event) {
+    event.preventDefault();
+    if (!validateStockQuantities()) return;
+
+    const productId = document.getElementById('update-product-id').value;
+    const newOnHand = parseInt(document.getElementById('input-on-hand').value, 10) || 0;
+    const newFreeToUse = parseInt(document.getElementById('input-free-to-use').value, 10) || 0;
+
+    const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+    if (row) {
+      // Update data attributes
+      row.setAttribute('data-onhand', newOnHand);
+      row.setAttribute('data-freetouse', newFreeToUse);
+
+      // Update visible labels
+      const onHandLabel = row.querySelector('.val-onhand');
+      const freeToUseLabel = row.querySelector('.val-freetouse');
+      if (onHandLabel) onHandLabel.textContent = newOnHand;
+      if (freeToUseLabel) freeToUseLabel.textContent = newFreeToUse;
+
+      // Highlight animation
+      row.classList.remove('ss-row-updated');
+      void row.offsetWidth; // Trigger reflow
+      row.classList.add('ss-row-updated');
+
+      recalcTotals();
+      showStockToast('Stock updated successfully for ' + row.getAttribute('data-name'));
+    }
+
+    closeUpdateStockModal();
+  }
+
+  // 3. New Product Modal Flow
+  function openNewProductModal() {
+    const modal = document.getElementById('modal-new-product');
+    const form = document.getElementById('form-new-product');
+    if (form) form.reset();
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeNewProductModal() {
+    const modal = document.getElementById('modal-new-product');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function handleNewProductSubmit(event) {
+    event.preventDefault();
+    const name = document.getElementById('new-prod-name').value.trim();
+    const sku = document.getElementById('new-prod-sku').value.trim();
+    const cost = document.getElementById('new-prod-cost').value.trim();
+    const onHand = parseInt(document.getElementById('new-prod-onhand').value, 10) || 0;
+    const freeToUse = parseInt(document.getElementById('new-prod-freetouse').value, 10) || 0;
+
+    if (!name || !sku || !cost) return;
+
+    const newId = 'prod-' + Date.now();
+    const tbody = document.getElementById('ss-table-body');
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-product-id', newId);
+    tr.setAttribute('data-name', name);
+    tr.setAttribute('data-sku', sku);
+    tr.setAttribute('data-cost', cost);
+    tr.setAttribute('data-onhand', onHand);
+    tr.setAttribute('data-freetouse', freeToUse);
+
+    tr.innerHTML = `
+      <td>
+        <div class="ss-product-cell">
+          <div class="ss-product-icon-wrap">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+          </div>
+          <div class="ss-product-info">
+            <span class="ss-product-name">${escapeHtml(name)}</span>
+            <span class="ss-product-sku">SKU: ${escapeHtml(sku)}</span>
+          </div>
+        </div>
+      </td>
+      <td>
+        <span class="ss-cost">${escapeHtml(cost)} Rs</span>
+      </td>
+      <td>
+        <span class="ss-badge ss-badge-onhand">
+          <span class="ss-dot"></span>
+          <span class="val-onhand">${onHand}</span> Units
+        </span>
+      </td>
+      <td>
+        <span class="ss-badge ss-badge-freetouse">
+          <span class="ss-dot"></span>
+          <span class="val-freetouse">${freeToUse}</span> Available
+        </span>
+      </td>
+      <td style="text-align: right;">
+        <button 
+          type="button" 
+          class="ss-btn ss-btn-outline ss-btn-sm" 
+          onclick="openUpdateStockModal('${newId}')"
+        >
+          Update Stock
+        </button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+    tr.classList.add('ss-row-updated');
+    closeNewProductModal();
+    recalcTotals();
+    showStockToast('Product "' + name + '" added successfully.');
+  }
+
+  // 4. Modal Backdrop and Keyboard handling
+  function handleStockBackdropClick(event, modalId) {
+    if (event.target && event.target.id === modalId) {
+      if (modalId === 'modal-update-stock') closeUpdateStockModal();
+      if (modalId === 'modal-new-product') closeNewProductModal();
+    }
+  }
+
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      closeUpdateStockModal();
+      closeNewProductModal();
+    }
+  });
+
+  // 5. Toast System
+  let toastTimer = null;
+  function showStockToast(msg) {
+    const toast = document.getElementById('ss-toast');
+    const toastMsg = document.getElementById('ss-toast-message');
+    if (!toast || !toastMsg) return;
+
+    toastMsg.textContent = msg;
+    toast.classList.add('active');
+
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('active');
+    }, 3200);
+  }
+
+  // 6. Recalculate summary metrics
+  function recalcTotals() {
+    const rows = document.querySelectorAll('#ss-table-body tr');
+    let totalOnHand = 0;
+    rows.forEach(r => {
+      totalOnHand += parseInt(r.getAttribute('data-onhand'), 10) || 0;
+    });
+
+    const totalCountEl = document.getElementById('ss-total-count');
+    const totalOnHandEl = document.getElementById('ss-total-onhand');
+
+    if (totalCountEl) totalCountEl.textContent = rows.length;
+    if (totalOnHandEl) totalOnHandEl.textContent = totalOnHand;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
