@@ -1,88 +1,130 @@
-# StockSense — Modern Odoo Inventory Management System
+# StockSense — Modular Inventory Management System
 
-> Built for the Odoo Hackathon: A full-stack, real-time Warehouse Management System (WMS) inspired by Odoo 17/18 inventory flows.
-
----
-
-## 🌟 Key Features
-
-1. **Dashboard & Real-time KPIs**
-   - Live KPI cards for Receipts (To Receive, Late) and Deliveries (To Deliver, Waiting, Late).
-   - Dynamic real-time statistics calculation based on operational status.
-
-2. **Operations: Inward Receipts & Outward Deliveries**
-   - **Receipts:** Dual List & Kanban views (`Draft` ➔ `Ready` ➔ `Done`). Automatic stock increment and Move History logging upon validation.
-   - **Deliveries:** Real-time stock availability check. Automatic **Red-Line Alert** when items are out-of-stock; order held in `Waiting` state until stock arrives.
-   - Printable delivery notes and receipt slips.
-
-3. **Stock & Warehouse Management**
-   - On-Hand vs. Free-To-Use inventory tracking.
-   - Physical inventory adjustment and count reconciliation.
-   - **Internal Transfers & Scrap:** Move inventory between racks (`WH/Stock1` ➔ `WH/Stock2`) or scrap damaged goods.
-
-4. **Move History (Audit Trail Ledger)**
-   - Color-coded ledger (`IN` in Green, `OUT` in Red, `INTERNAL` in Blue, `SCRAP` in Orange).
-   - Filter by date range, operation type, search text, and instant CSV export.
+StockSense is a full-featured, real-time Warehouse Management System (WMS) built with Flask, SQLite, and vanilla modern frontend components. Designed around core Odoo ERP inventory flows, it handles the complete product lifecycle from vendor receipts and internal rack transfers to physical count reconciliation, barcode scanning, and customer deliveries.
 
 ---
 
-## 🏗️ System Architecture
+## 📌 Project Overview
 
-```mermaid
-graph TD
-    Client[Browser / Frontend Client] -->|HTTP REST APIs| FlaskApp[Flask Application Server]
-    FlaskApp -->|Jinja2 Templates| UI[Modular Components UI]
-    FlaskApp -->|SQLite3 Engine| DB[(stocksense.db)]
-    
-    subgraph UI Components
-        UI --> Comp1[dashboard.html]
-        UI --> Comp2[stock.html]
-        UI --> Comp3[receipts.html]
-        UI --> Comp4[deliveries.html]
-        UI --> Comp5[move_history.html]
-    end
-    
-    subgraph Core Business Logic
-        FlaskApp --> Auth[Session & Auth Handler]
-        FlaskApp --> Ops[Receipts & Delivery Pipeline]
-        FlaskApp --> StockEngine[Stock Availability & FIFO Ledger]
-    end
+Managing warehouse operations requires strict traceability, zero phantom stock, and clear audit logging. StockSense breaks down inventory workflows into distinct, interconnected modules:
+
+- **Inward Receipts (WH/IN):** Track goods received from suppliers with draft-to-done validation and instant stock updates.
+- **Outward Deliveries (WH/OUT):** Manage customer shipments with live stock availability verification and automated backorder/waiting queue holds.
+- **Physical Inventory Adjustment:** Reconcile system quantities with ground physical counts through stepped adjustments and variance calculation.
+- **Move History (Audit Trail Ledger):** Comprehensive, immutable inventory ledger logging every IN, OUT, INTERNAL, and SCRAP movement.
+- **Barcode Scanner:** Real-time SKU/barcode scanner simulator with audio-visual feedback and rapid action routing.
+- **Warehouse & Location Hierarchy:** Multi-warehouse configuration with rack-level shelf visualization (`WH/Stock1`, `WH/Stock2`, `Virtual/Scrap`).
+
+---
+
+## 🛠️ Tech Stack
+
+- **Backend:** Python (Flask), SQLite3
+- **Frontend:** HTML5, Modern CSS3 (Odoo-inspired theme palette), Vanilla JavaScript (ES6+)
+- **Charting & Icons:** Chart.js, Font Awesome 6
+- **Typography:** Plus Jakarta Sans, Inter, JetBrains Mono
+
+---
+
+## ⚡ Key Modules & Features
+
+### 1. Operations & Logistics Flow
+- **Receipts Pipeline:** Lifecycle states (`Draft` ➔ `Ready` ➔ `Done`) with batch reception and automatic move ledger recording.
+- **Delivery Availability Engine:** Validates free-to-use stock before allowing delivery dispatch. Out-of-stock items automatically trigger a waiting state to prevent negative inventory.
+- **Document Printing:** Clean print-ready templates for delivery notes and vendor receiving slips.
+
+### 2. Physical Inventory Count & Adjustment
+- Live variance calculation comparing system stock against actual shelf counts.
+- Single-row and batch adjustment actions with automatic ledger sync.
+- Visual status badges highlighting positive overages, negative shortages, and verified counts.
+
+### 3. Move History Ledger (Audit Trail)
+- Color-coded transaction log (`#10B981` Green for Inward, `#EF4444` Red for Outward, Blue for Internal Transfers, Orange for Scrap).
+- Multi-row display for split product references.
+- Real-time search, category filtering, and one-click CSV export for reporting.
+
+### 4. Interactive Dashboard & Barcode Scanner
+- Live KPI counter cards for pending, late, and completed operations.
+- Weekly movement trend comparison chart (Receipts vs Deliveries).
+- Interactive barcode scanner modal with keyboard shortcut (`B`), simulated viewfinder, audio beep confirmation, and fast SKU actions.
+
+### 5. Multi-Warehouse & Rack Management
+- Warehouse cards with utilization progress bars and location capacities.
+- Visual rack tags for tracking specific storage shelves and virtual locations.
+
+---
+
+## 📁 Repository Structure
+
+```text
+stocksense/
+├── app.py                      # Flask backend application & REST API routes
+├── database.py                 # SQLite database helper & schema initialization
+├── requirements.txt            # Python dependencies
+├── templates/
+│   ├── index.html              # Main application shell & navigation
+│   └── components/
+│       ├── auth_settings.html        # Authentication & settings modal
+│       ├── barcode_scanner.html      # Barcode camera & SKU lookup modal
+│       ├── dashboard.html            # Analytics dashboard & trend charts
+│       ├── deliveries.html           # Outward delivery orders
+│       ├── inventory_adjustment.html # Physical inventory adjustment
+│       ├── move_history.html         # Audit trail ledger & export
+│       ├── receipts.html             # Inward vendor receipts
+│       ├── stock.html                # Product inventory & internal transfers
+│       └── warehouse_locations.html  # Warehouses and rack locations
+└── static/                     # CSS stylesheets, JS scripts, and assets
 ```
 
 ---
 
-## 👥 Team & Work Distribution
-
-| Member | Role | Key Contributions |
-| :--- | :--- | :--- |
-| **Anurag Kashyap** | Team Lead / Backend | Flask backend architecture, SQLite schema, Operations APIs, Auth & Session management, Component integration. |
-| **Akash Sahani** | Frontend Developer | Stock tracking view, Inventory count adjustment, Internal Location Transfer & Scrap modal. |
-| **Ankit Kumar** | Full-Stack Developer | Live Dashboard KPI metrics, Move History Ledger (Audit Trail), Kanban board views. |
-
----
-
-## 🚀 Getting Started
+## 🚀 Setup & Local Installation
 
 ### Prerequisites
-- Python 3.8+
-- Flask (`pip install flask`)
+- Python 3.8 or newer
+- pip (Python package manager)
 
-### Running Locally
-```bash
-# Clone the repository
-git clone https://github.com/anuragkashyap5870/stock-sense.git
-cd stock-sense
+### Steps
 
-# Install Flask
-pip install flask
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/anuragkashyap5870/stock-sense.git
+   cd stock-sense
+   ```
 
-# Run the development server
-python app.py
-```
+2. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   # or manually:
+   pip install flask
+   ```
 
-Open your browser at **`http://127.0.0.1:5000`**
+3. **Start the application:**
+   ```bash
+   python app.py
+   ```
 
-### Demo Credentials
-- **Login ID:** `admin_odoo`
+4. **Access the application:**
+   Open your browser and navigate to:
+   ```text
+   http://127.0.0.1:5000
+   ```
+
+### Default Credentials
+- **Username:** `admin_odoo`
 - **Password:** `Admin@123`
-*(Or click "Sign Up" to create a new account)*
+
+*(You can also use the built-in Sign Up option to create a custom user account.)*
+
+---
+
+## 👥 Team & Development Roles
+
+- **Anurag Kashyap** — Backend Architecture, SQLite Schema, API Endpoints, System Integration
+- **Akash Sahani** — Frontend Operations, Inventory Adjustment, Stock Tracking & Warehouse Cards
+- **Ankit Kumar** — Dashboard Analytics, Movement Ledger, Barcode Scanner & UI Components
+
+---
+
+## 📄 License
+This project was developed for the Odoo Hackathon. Distributed under the MIT License.
