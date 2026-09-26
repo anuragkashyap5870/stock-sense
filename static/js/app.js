@@ -378,15 +378,22 @@ function toggleReceiptViewMode(mode) {
   loadReceipts();
 }
 
+function filterReceiptsByStatus() {
+  loadReceipts();
+}
+
 async function loadReceipts() {
   const search = (document.getElementById("receipts-search-input")?.value || "").trim();
+  const statusFilter = document.getElementById("receipts-status-filter")?.value || "all";
   try {
     const res = await fetch(`/api/receipts?search=${encodeURIComponent(search)}`);
     const receipts = await res.json();
 
+    const filtered = statusFilter === "all" ? receipts : receipts.filter(r => r.status === statusFilter);
+
     // Populate List Table
     const tbody = document.getElementById("receipts-table-body");
-    tbody.innerHTML = receipts.map(r => `
+    tbody.innerHTML = filtered.map(r => `
       <tr class="clickable" onclick="viewReceiptDetailById(${r.id})">
         <td><strong class="font-mono text-purple">${r.reference}</strong></td>
         <td>${r.from_location}</td>
@@ -593,14 +600,21 @@ function toggleDeliveryViewMode(mode) {
   loadDeliveries();
 }
 
+function filterDeliveriesByStatus() {
+  loadDeliveries();
+}
+
 async function loadDeliveries() {
   const search = (document.getElementById("deliveries-search-input")?.value || "").trim();
+  const statusFilter = document.getElementById("deliveries-status-filter")?.value || "all";
   try {
     const res = await fetch(`/api/deliveries?search=${encodeURIComponent(search)}`);
     const deliveries = await res.json();
 
+    const filtered = statusFilter === "all" ? deliveries : deliveries.filter(d => d.status === statusFilter);
+
     const tbody = document.getElementById("deliveries-table-body");
-    tbody.innerHTML = deliveries.map(d => `
+    tbody.innerHTML = filtered.map(d => `
       <tr class="clickable ${d.has_out_of_stock && d.status === 'Waiting' ? 'out-of-stock-row' : ''}" onclick="viewDeliveryDetailById(${d.id})">
         <td><strong class="font-mono text-purple">${d.reference}</strong></td>
         <td>${d.from_location}</td>
@@ -819,6 +833,126 @@ async function submitNewDelivery(e) {
   } catch (err) {
     alert("Error creating delivery order");
   }
+}
+
+// Print Receipt Slip Helper
+function printReceiptDoc() {
+  if (!currentReceiptDetail) return;
+  const printWin = window.open("", "_blank", "width=800,height=600");
+  if (!printWin) {
+    window.print();
+    return;
+  }
+  const itemsHtml = (currentReceiptDetail.items || []).map(i => `
+    <tr>
+      <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${i.product_name}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">${i.quantity}</td>
+    </tr>
+  `).join("");
+
+  printWin.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Receipt Slip - ${currentReceiptDetail.reference}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 32px; color: #1f2937; margin: 0; }
+          .header { display: flex; justify-content: space-between; border-bottom: 2px solid #714b67; padding-bottom: 16px; }
+          .title { font-size: 22px; font-weight: 800; color: #714b67; }
+          .meta-grid { display: grid; grid-template-columns: 1fr 1fr; margin: 24px 0; gap: 12px; font-size: 14px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+          th { background: #f9fafb; padding: 10px; text-align: left; border-bottom: 2px solid #e5e7eb; }
+          .badge { display: inline-block; padding: 4px 10px; border-radius: 9999px; background: #e0f2fe; color: #0284c7; font-weight: 600; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="title">StockSense - Inward Receipt Slip</div>
+            <small style="color: #6b7280;">Document Reference: <strong>${currentReceiptDetail.reference}</strong></small>
+          </div>
+          <div style="text-align:right;">
+            <span class="badge">${currentReceiptDetail.status}</span>
+          </div>
+        </div>
+        <div class="meta-grid">
+          <div><strong>Vendor / Contact:</strong> ${currentReceiptDetail.contact}</div>
+          <div><strong>Scheduled Date:</strong> ${currentReceiptDetail.schedule_date}</div>
+          <div><strong>Source Location:</strong> ${currentReceiptDetail.from_location}</div>
+          <div><strong>Destination:</strong> ${currentReceiptDetail.to_location}</div>
+          <div><strong>Responsible:</strong> ${currentReceiptDetail.responsible || 'Administrator'}</div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Product Description</th><th style="text-align:right;">Received Qty</th></tr>
+          </thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+        <script>window.onload = function() { window.print(); }<\/script>
+      </body>
+    </html>
+  `);
+  printWin.document.close();
+}
+
+// Print Delivery Slip Helper
+function printDeliveryDoc() {
+  if (!currentDeliveryDetail) return;
+  const printWin = window.open("", "_blank", "width=800,height=600");
+  if (!printWin) {
+    window.print();
+    return;
+  }
+  const itemsHtml = (currentDeliveryDetail.items || []).map(i => `
+    <tr>
+      <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${i.product_name}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">${i.quantity}</td>
+    </tr>
+  `).join("");
+
+  printWin.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Delivery Order - ${currentDeliveryDetail.reference}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 32px; color: #1f2937; margin: 0; }
+          .header { display: flex; justify-content: space-between; border-bottom: 2px solid #008784; padding-bottom: 16px; }
+          .title { font-size: 22px; font-weight: 800; color: #008784; }
+          .meta-grid { display: grid; grid-template-columns: 1fr 1fr; margin: 24px 0; gap: 12px; font-size: 14px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+          th { background: #f9fafb; padding: 10px; text-align: left; border-bottom: 2px solid #e5e7eb; }
+          .badge { display: inline-block; padding: 4px 10px; border-radius: 9999px; background: #dcfce7; color: #15803d; font-weight: 600; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="title">StockSense - Delivery Slip</div>
+            <small style="color: #6b7280;">Document Reference: <strong>${currentDeliveryDetail.reference}</strong></small>
+          </div>
+          <div style="text-align:right;">
+            <span class="badge">${currentDeliveryDetail.status}</span>
+          </div>
+        </div>
+        <div class="meta-grid">
+          <div><strong>Customer Contact:</strong> ${currentDeliveryDetail.contact}</div>
+          <div><strong>Delivery Address:</strong> ${currentDeliveryDetail.address}</div>
+          <div><strong>Source Location:</strong> ${currentDeliveryDetail.from_location}</div>
+          <div><strong>Scheduled Date:</strong> ${currentDeliveryDetail.schedule_date}</div>
+          <div><strong>Responsible:</strong> ${currentDeliveryDetail.responsible || 'Administrator'}</div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Product Description</th><th style="text-align:right;">Shipped Qty</th></tr>
+          </thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+        <script>window.onload = function() { window.print(); }<\/script>
+      </body>
+    </html>
+  `);
+  printWin.document.close();
 }
 
 // --- 5. Move History (Color Coded Ledger) ---
