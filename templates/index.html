@@ -168,6 +168,23 @@
           <span>Reset Demo</span>
         </button>
 
+        <!-- Low Stock Alerts Notification Bell -->
+        <div class="user-profile-menu" style="position: relative;">
+          <button class="icon-btn" id="btn-alerts-bell" title="Low Stock & Reorder Alerts" onclick="toggleAlertsPopover(event)" style="position: relative;">
+            <i class="fa-solid fa-bell"></i>
+            <span id="alerts-badge-count" style="display: none; position: absolute; top: -4px; right: -4px; background: #DC2626; color: #FFFFFF; font-size: 10px; font-weight: 800; border-radius: 9999px; padding: 1px 5px; min-width: 16px; text-align: center;">0</span>
+          </button>
+          <div class="user-popover hidden" id="alerts-popover" style="width: 300px; right: 0; padding: 14px; top: 45px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 10px;">
+              <strong style="font-size: 13px; color: #0F172A;"><i class="fa-solid fa-triangle-exclamation" style="color: #D97706; margin-right: 6px;"></i> Stock Alerts</strong>
+              <small id="alerts-popover-count" style="color: #64748B; font-size: 11px;">0 items</small>
+            </div>
+            <div id="alerts-popover-list" style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+        </div>
+
         <!-- Live Clock -->
         <div class="live-clock" id="live-clock">
           <i class="fa-regular fa-clock"></i> <span>10:30 AM</span>

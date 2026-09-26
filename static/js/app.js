@@ -258,7 +258,63 @@ function navigateTo(viewName, e) {
 async function loadInitialData() {
   await loadProducts();
   loadDashboardStats();
+  loadLowStockAlerts();
 }
+
+async function loadLowStockAlerts() {
+  try {
+    const res = await fetch("/api/alerts/low-stock");
+    const data = await res.json();
+    if (data.success && data.alerts) {
+      const badge = document.getElementById("alerts-badge-count");
+      const listContainer = document.getElementById("alerts-popover-list");
+      const countLabel = document.getElementById("alerts-popover-count");
+      
+      if (badge) {
+        if (data.count > 0) {
+          badge.textContent = data.count;
+          badge.style.display = "inline-block";
+        } else {
+          badge.style.display = "none";
+        }
+      }
+      if (countLabel) countLabel.textContent = `${data.count} items`;
+      if (listContainer) {
+        if (data.count === 0) {
+          listContainer.innerHTML = `<div style="text-align: center; color: #64748B; font-size: 12px; padding: 10px;">All stock levels optimal ✅</div>`;
+        } else {
+          listContainer.innerHTML = data.alerts.map(a => `
+            <div style="background: ${a.severity === 'CRITICAL' ? '#FEF2F2' : '#FFFBEB'}; border: 1px solid ${a.severity === 'CRITICAL' ? '#FECACA' : '#FDE68A'}; border-radius: 6px; padding: 8px 10px; font-size: 12px;">
+              <div style="display: flex; justify-content: space-between; font-weight: 700; color: #0F172A;">
+                <span>${a.name}</span>
+                <span style="color: ${a.severity === 'CRITICAL' ? '#DC2626' : '#D97706'}; font-size: 11px;">${a.free_to_use} Left</span>
+              </div>
+              <div style="font-size: 11px; color: #64748B; margin-top: 2px;">
+                Reorder suggested: <strong>+${a.reorder_suggested} units</strong>
+              </div>
+            </div>
+          `).join("");
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to load low stock alerts", e);
+  }
+}
+
+function toggleAlertsPopover(e) {
+  if (e) e.stopPropagation();
+  const pop = document.getElementById("alerts-popover");
+  if (pop) pop.classList.toggle("hidden");
+}
+
+document.addEventListener("click", (e) => {
+  const pop = document.getElementById("alerts-popover");
+  const bell = document.getElementById("btn-alerts-bell");
+  if (pop && !pop.classList.contains("hidden") && !pop.contains(e.target) && !bell.contains(e.target)) {
+    pop.classList.add("hidden");
+  }
+});
 
 async function loadProducts() {
   try {
@@ -295,6 +351,7 @@ async function loadStockTable() {
   await loadProducts();
   window.currentProducts = currentProducts;
   filterStockTable();
+  loadLowStockAlerts();
 }
 
 function filterStockTable() {
