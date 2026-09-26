@@ -326,6 +326,16 @@ def login():
         session["full_name"] = user_data["full_name"]
         session["email"] = user_data["email"]
         session["phone"] = user_data.get("phone", "")
+        
+        if supabase_client and supabase_client.is_supabase_enabled():
+            supabase_client.supabase_log_activity(
+                user_identifier=user_data.get("email") or user_data.get("login_id"),
+                action="LOGIN",
+                description=f"User {user_data.get('login_id')} logged in via {'Supabase Cloud' if user_data.get('cloud') else 'Local Fallback'}",
+                metadata={"cloud": user_data.get("cloud", False), "phone": user_data.get("phone", "")},
+                ip_address=request.remote_addr
+            )
+            
         return jsonify({
             "success": True,
             "user": user_data,
@@ -391,6 +401,15 @@ def signup():
     session["full_name"] = login_id.capitalize()
     session["email"] = email
     session["phone"] = phone
+    
+    if supabase_client and supabase_client.is_supabase_enabled():
+        supabase_client.supabase_log_activity(
+            user_identifier=email,
+            action="SIGNUP",
+            description=f"New user registered: {login_id} ({email})",
+            metadata={"login_id": login_id, "phone": phone, "cloud": cloud_registered},
+            ip_address=request.remote_addr
+        )
     
     return jsonify({
         "success": True,
@@ -574,6 +593,15 @@ def adjust_inventory():
             INSERT INTO move_history (reference, op_type, date, from_loc, to_loc, product_name, quantity, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, 'Done')
         """, (ref, op_type, date.today().isoformat(), from_loc, to_loc, prod["name"], abs(diff)))
+        
+        if supabase_client and supabase_client.is_supabase_enabled():
+            supabase_client.supabase_log_activity(
+                user_identifier=session.get("email") or session.get("login_id") or "Warehouse Manager",
+                action="STOCK_ADJUSTMENT",
+                description=f"Reconciled physical stock for {prod['name']}: {counted} units (variance: {diff})",
+                metadata={"product_id": pid, "counted": counted, "difference": diff, "reference": ref},
+                ip_address=request.remote_addr
+            )
     
     conn.commit()
     conn.close()
@@ -711,6 +739,15 @@ def update_receipt_status(rid):
                 VALUES (?, 'IN', ?, ?, ?, ?, ?, 'Done')
             """, (receipt["reference"], date.today().isoformat(), receipt["from_location"], receipt["to_location"],
                   item["product_name"], item["quantity"]))
+
+        if supabase_client and supabase_client.is_supabase_enabled():
+            supabase_client.supabase_log_activity(
+                user_identifier=session.get("email") or session.get("login_id") or "Warehouse Admin",
+                action="RECEIPT_VALIDATED",
+                description=f"Inward Receipt {receipt['reference']} received from {receipt['contact']} into {receipt['to_location']}",
+                metadata={"reference": receipt["reference"], "items_count": len(items)},
+                ip_address=request.remote_addr
+            )
                   
     conn.commit()
     conn.close()
@@ -831,6 +868,15 @@ def update_delivery_status(did):
                 VALUES (?, 'OUT', ?, ?, ?, ?, ?, 'Done')
             """, (delivery["reference"], date.today().isoformat(), delivery["from_location"], delivery["to_location"],
                   item["product_name"], item["quantity"]))
+
+        if supabase_client and supabase_client.is_supabase_enabled():
+            supabase_client.supabase_log_activity(
+                user_identifier=session.get("email") or session.get("login_id") or "Warehouse Admin",
+                action="DELIVERY_DISPATCHED",
+                description=f"Outward Delivery {delivery['reference']} dispatched to customer {delivery['contact']}",
+                metadata={"reference": delivery["reference"], "items_count": len(items)},
+                ip_address=request.remote_addr
+            )
                   
     conn.commit()
     conn.close()
@@ -886,6 +932,15 @@ def create_internal_transfer():
             VALUES (?, 'INTERNAL', ?, ?, ?, ?, ?, 'Done')
         """, (ref, date.today().isoformat(), from_loc, to_loc, product["name"], qty))
 
+    if supabase_client and supabase_client.is_supabase_enabled():
+        supabase_client.supabase_log_activity(
+            user_identifier=session.get("email") or session.get("login_id") or "Warehouse Admin",
+            action="SCRAP" if is_scrap else "INTERNAL_TRANSFER",
+            description=f"{'Scrapped' if is_scrap else 'Transferred'} {qty} units of {product['name']} from {from_loc} to {to_loc}",
+            metadata={"product_id": product_id, "reference": ref, "quantity": qty, "is_scrap": is_scrap},
+            ip_address=request.remote_addr
+        )
+
     conn.commit()
     conn.close()
     return jsonify({"success": True, "reference": ref, "message": "Transfer logged successfully"})
@@ -895,6 +950,140 @@ def create_internal_transfer():
 def reset_demo_data_endpoint():
     init_db(force_reseed=True)
     return jsonify({"success": True, "message": "Demo data successfully reset to initial hackathon state!"})
+
+# --- Automated Low-Stock Alert & Reorder Engine ---
+@app.route("/api/alerts/low-stock")
+def get_low_stock_alerts():
+    threshold = int(request.args.get("threshold", 25))
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM products WHERE free_to_use <= ? ORDER BY free_to_use ASC", (threshold,))
+    products = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+
+    alerts = []
+    for p in products:
+        severity = "CRITICAL" if p["free_to_use"] <= 10 else "WARNING"
+        reorder_suggested = max(20, 50 - p["free_to_use"])
+        alerts.append({
+            "product_id": p["id"],
+            "name": p["name"],
+            "code": p["code"],
+            "on_hand": p["on_hand"],
+            "free_to_use": p["free_to_use"],
+            "severity": severity,
+            "reorder_suggested": reorder_suggested,
+            "message": f"Stock critical! Only {p['free_to_use']} available (reorder threshold: {threshold})"
+        })
+
+    return jsonify({
+        "success": True,
+        "count": len(alerts),
+        "alerts": alerts
+    })
+
+# --- Auto Stock Reservation & Allocation for Deliveries ---
+@app.route("/api/deliveries/<int:did>/allocate", methods=["POST"])
+def auto_allocate_delivery(did):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM deliveries WHERE id = ?", (did,))
+    delivery = cursor.fetchone()
+    if not delivery:
+        conn.close()
+        return jsonify({"success": False, "message": "Delivery not found"}), 404
+
+    cursor.execute("SELECT * FROM delivery_items WHERE delivery_id = ?", (did,))
+    items = cursor.fetchall()
+
+    all_available = True
+    missing_items = []
+    for item in items:
+        cursor.execute("SELECT free_to_use, name FROM products WHERE id = ?", (item["product_id"],))
+        prod = cursor.fetchone()
+        if not prod or prod["free_to_use"] < item["quantity"]:
+            all_available = False
+            missing_items.append(prod["name"] if prod else "Unknown")
+            cursor.execute("UPDATE delivery_items SET is_out_of_stock = 1 WHERE id = ?", (item["id"],))
+        else:
+            cursor.execute("UPDATE delivery_items SET is_out_of_stock = 0 WHERE id = ?", (item["id"],))
+
+    new_status = "Ready" if all_available else "Waiting"
+    cursor.execute("UPDATE deliveries SET status = ? WHERE id = ?", (new_status, did))
+    conn.commit()
+    conn.close()
+
+    if all_available:
+        return jsonify({
+            "success": True,
+            "status": "Ready",
+            "message": f"All items allocated for {delivery['reference']}! Order promoted to Ready state."
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "status": "Waiting",
+            "message": f"Stock allocation pending for: {', '.join(missing_items)}. Inward receipt required."
+        })
+
+# --- System & Cloud Telemetry Health Endpoint ---
+@app.route("/api/health")
+def system_health():
+    import time
+    start_t = time.time()
+    supabase_ok = False
+    supabase_latency_ms = None
+    if supabase_client and supabase_client.is_supabase_enabled():
+        try:
+            sb_start = time.time()
+            supabase_client.supabase.auth.get_session()
+            supabase_latency_ms = round((time.time() - sb_start) * 1000, 2)
+            supabase_ok = True
+        except Exception:
+            supabase_ok = False
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM products")
+    products_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM move_history")
+    moves_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM receipts")
+    receipts_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM deliveries")
+    deliveries_count = cursor.fetchone()[0]
+    conn.close()
+
+    total_latency_ms = round((time.time() - start_t) * 1000, 2)
+
+    return jsonify({
+        "status": "HEALTHY",
+        "timestamp": datetime.now().isoformat(),
+        "database": {
+            "type": "SQLite3 (Local Core Engine)",
+            "status": "ONLINE",
+            "products_tracked": products_count,
+            "total_audit_moves": moves_count,
+            "receipts": receipts_count,
+            "deliveries": deliveries_count
+        },
+        "cloud_sync": {
+            "provider": "Supabase Cloud Platform",
+            "connected": supabase_ok,
+            "latency_ms": supabase_latency_ms,
+            "auth_mode": "Hybrid (Supabase Cloud + Local SQLite Fallback)"
+        },
+        "server_response_ms": total_latency_ms
+    })
+
+# --- Live Supabase Cloud Activity Stream ---
+@app.route("/api/supabase/activities")
+def get_supabase_activities():
+    limit = int(request.args.get("limit", 25))
+    if supabase_client and supabase_client.is_supabase_enabled():
+        logs = supabase_client.supabase_get_activities(limit=limit)
+        return jsonify({"success": True, "source": "Supabase Cloud", "activities": logs})
+    return jsonify({"success": False, "source": "None", "activities": [], "message": "Supabase not connected"})
 
 if __name__ == "__main__":
     print("[INFO] StockSense Odoo Inventory Server running on http://127.0.0.1:5000")

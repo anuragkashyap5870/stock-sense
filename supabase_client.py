@@ -145,3 +145,39 @@ def supabase_reset_password(identifier: str, new_password: str):
         return {"success": True, "message": "Password successfully updated in Supabase Cloud!"}
     except Exception as err:
         return {"success": False, "message": f"Error updating password: {err}"}
+
+
+def supabase_log_activity(user_identifier: str, action: str, description: str, metadata: dict = None, ip_address: str = None):
+    """
+    Logs an event, user login, or warehouse operation in the Supabase Cloud 'activity_logs' table.
+    Gracefully falls back if table is pending creation in Supabase SQL editor.
+    """
+    if not supabase:
+        return False
+    try:
+        payload = {
+            "user_identifier": user_identifier or "System",
+            "action": action,
+            "description": description,
+            "metadata": metadata or {},
+            "ip_address": ip_address or "127.0.0.1"
+        }
+        supabase.table("activity_logs").insert(payload).execute()
+        return True
+    except Exception as e:
+        print(f"[SUPABASE LOG] {action} by {user_identifier}: {description} (Notice: {e})")
+        return False
+
+
+def supabase_get_activities(limit: int = 25):
+    """
+    Fetches the latest activity logs from Supabase Cloud for live monitoring.
+    """
+    if not supabase:
+        return []
+    try:
+        res = supabase.table("activity_logs").select("*").order("created_at", desc=True).limit(limit).execute()
+        return res.data or []
+    except Exception as e:
+        return []
+
