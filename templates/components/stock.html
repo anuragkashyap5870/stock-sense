@@ -1173,36 +1173,32 @@
     }
   }
 
-  function handleStockSave(event) {
+  async function handleStockSave(event) {
     event.preventDefault();
     if (!validateStockQuantities()) return;
 
     const productId = document.getElementById('update-product-id').value;
+    const cleanPid = productId.replace('prod-', '');
     const newOnHand = parseInt(document.getElementById('input-on-hand').value, 10) || 0;
     const newFreeToUse = parseInt(document.getElementById('input-free-to-use').value, 10) || 0;
 
-    const row = document.querySelector(`tr[data-product-id="${productId}"]`);
-    if (row) {
-      // Update data attributes
-      row.setAttribute('data-onhand', newOnHand);
-      row.setAttribute('data-freetouse', newFreeToUse);
-
-      // Update visible labels
-      const onHandLabel = row.querySelector('.val-onhand');
-      const freeToUseLabel = row.querySelector('.val-freetouse');
-      if (onHandLabel) onHandLabel.textContent = newOnHand;
-      if (freeToUseLabel) freeToUseLabel.textContent = newFreeToUse;
-
-      // Highlight animation
-      row.classList.remove('ss-row-updated');
-      void row.offsetWidth; // Trigger reflow
-      row.classList.add('ss-row-updated');
-
-      recalcTotals();
-      showStockToast('Stock updated successfully for ' + row.getAttribute('data-name'));
+    try {
+      const res = await fetch(`/api/products/${cleanPid}/stock`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ on_hand: newOnHand, free_to_use: newFreeToUse })
+      });
+      if (res.ok) {
+        closeUpdateStockModal();
+        showStockToast('Stock updated successfully in database.');
+        if (typeof loadStockTable === 'function') await loadStockTable();
+        if (typeof loadDashboardStats === 'function') loadDashboardStats();
+      } else {
+        alert('Failed to update stock in database.');
+      }
+    } catch (err) {
+      alert('Error saving stock to server');
     }
-
-    closeUpdateStockModal();
   }
 
   // 3. New Product Modal Flow
@@ -1218,73 +1214,34 @@
     if (modal) modal.classList.remove('active');
   }
 
-  function handleNewProductSubmit(event) {
+  async function handleNewProductSubmit(event) {
     event.preventDefault();
     const name = document.getElementById('new-prod-name').value.trim();
     const sku = document.getElementById('new-prod-sku').value.trim();
-    const cost = document.getElementById('new-prod-cost').value.trim();
+    const cost = parseFloat(document.getElementById('new-prod-cost').value) || 0;
     const onHand = parseInt(document.getElementById('new-prod-onhand').value, 10) || 0;
     const freeToUse = parseInt(document.getElementById('new-prod-freetouse').value, 10) || 0;
 
     if (!name || !sku || !cost) return;
 
-    const newId = 'prod-' + Date.now();
-    const tbody = document.getElementById('ss-table-body');
-    const tr = document.createElement('tr');
-    tr.setAttribute('data-product-id', newId);
-    tr.setAttribute('data-name', name);
-    tr.setAttribute('data-sku', sku);
-    tr.setAttribute('data-cost', cost);
-    tr.setAttribute('data-onhand', onHand);
-    tr.setAttribute('data-freetouse', freeToUse);
-
-    tr.innerHTML = `
-      <td>
-        <div class="ss-product-cell">
-          <div class="ss-product-icon-wrap">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-              <line x1="12" y1="22.08" x2="12" y2="12"></line>
-            </svg>
-          </div>
-          <div class="ss-product-info">
-            <span class="ss-product-name">${escapeHtml(name)}</span>
-            <span class="ss-product-sku">SKU: ${escapeHtml(sku)}</span>
-          </div>
-        </div>
-      </td>
-      <td>
-        <span class="ss-cost">${escapeHtml(cost)} Rs</span>
-      </td>
-      <td>
-        <span class="ss-badge ss-badge-onhand">
-          <span class="ss-dot"></span>
-          <span class="val-onhand">${onHand}</span> Units
-        </span>
-      </td>
-      <td>
-        <span class="ss-badge ss-badge-freetouse">
-          <span class="ss-dot"></span>
-          <span class="val-freetouse">${freeToUse}</span> Available
-        </span>
-      </td>
-      <td style="text-align: right;">
-        <button 
-          type="button" 
-          class="ss-btn ss-btn-outline ss-btn-sm" 
-          onclick="openUpdateStockModal('${newId}')"
-        >
-          Update Stock
-        </button>
-      </td>
-    `;
-
-    tbody.appendChild(tr);
-    tr.classList.add('ss-row-updated');
-    closeNewProductModal();
-    recalcTotals();
-    showStockToast('Product "' + name + '" added successfully.');
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: sku, name: name, unit_cost: cost, on_hand: onHand })
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeNewProductModal();
+        showStockToast('Product "' + name + '" created in database.');
+        if (typeof loadStockTable === 'function') await loadStockTable();
+        if (typeof loadDashboardStats === 'function') loadDashboardStats();
+      } else {
+        alert(data.message || 'Failed to create product');
+      }
+    } catch (err) {
+      alert('Error creating product on server');
+    }
   }
 
   // 4. Modal Backdrop and Keyboard handling

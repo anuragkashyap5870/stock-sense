@@ -290,49 +290,120 @@ async function loadDashboardStats() {
 // --- 2. Stock Management ---
 async function loadStockTable() {
   await loadProducts();
+  window.currentProducts = currentProducts;
   filterStockTable();
 }
 
 function filterStockTable() {
-  const query = (document.getElementById("stock-search-input")?.value || "").toLowerCase().trim();
-  const tbody = document.getElementById("stock-table-body");
-  if (!tbody) return;
+  const query = (document.getElementById("ss-search-input")?.value || document.getElementById("stock-search-input")?.value || "").toLowerCase().trim();
+  const ssTbody = document.getElementById("ss-table-body");
+  const fallbackTbody = document.getElementById("stock-table-body");
 
   const filtered = currentProducts.filter(p => 
-    p.name.toLowerCase().includes(query) || p.code.toLowerCase().includes(query)
+    p.name.toLowerCase().includes(query) || (p.code || '').toLowerCase().includes(query)
   );
 
-  tbody.innerHTML = filtered.map(p => `
-    <tr>
-      <td>
-        <strong>${p.name}</strong>
-        <br><small class="text-muted font-mono">[${p.code}]</small>
-      </td>
-      <td><strong>${p.unit_cost.toLocaleString()} Rs</strong></td>
-      <td><span class="font-mono font-bold">${p.on_hand}</span></td>
-      <td>
-        <span class="font-mono ${p.free_to_use <= 0 ? 'text-danger font-bold' : ''}">${p.free_to_use}</span>
-      </td>
-      <td class="text-right">
-        <button class="btn btn-outline btn-sm" onclick="openUpdateStockModal(${p.id}, '${p.name}', ${p.on_hand}, ${p.free_to_use})">
-          <i class="fa-solid fa-pen-to-square"></i> Update Stock
-        </button>
-      </td>
-    </tr>
-  `).join("");
+  // 1. Populate Rich StockSense Component Table if present
+  if (ssTbody) {
+    let totalOnHand = 0;
+    ssTbody.innerHTML = filtered.map(p => {
+      totalOnHand += (p.on_hand || 0);
+      return `
+        <tr data-product-id="prod-${p.id}" data-name="${p.name}" data-sku="${p.code}" data-cost="${p.unit_cost}" data-onhand="${p.on_hand}" data-freetouse="${p.free_to_use}">
+          <td>
+            <div class="ss-product-cell">
+              <div class="ss-product-icon-wrap">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="12" rx="2"></rect>
+                  <line x1="7" y1="20" x2="7" y2="16"></line>
+                  <line x1="17" y1="20" x2="17" y2="16"></line>
+                </svg>
+              </div>
+              <div class="ss-product-info">
+                <span class="ss-product-name">${p.name}</span>
+                <span class="ss-product-sku">SKU: ${p.code}</span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="ss-cost">${p.unit_cost.toLocaleString()} Rs</span>
+          </td>
+          <td>
+            <span class="ss-badge ss-badge-onhand">
+              <span class="ss-dot"></span>
+              <span class="val-onhand">${p.on_hand}</span> Units
+            </span>
+          </td>
+          <td>
+            <span class="ss-badge ss-badge-freetouse">
+              <span class="ss-dot" style="${p.free_to_use <= 0 ? 'background: #ef4444;' : ''}"></span>
+              <span class="val-freetouse" style="${p.free_to_use <= 0 ? 'color: #ef4444; font-weight: bold;' : ''}">${p.free_to_use}</span> Available
+            </span>
+          </td>
+          <td style="text-align: right;">
+            <button 
+              type="button" 
+              class="ss-btn ss-btn-outline ss-btn-sm" 
+              onclick="openUpdateStockModal('prod-${p.id}')"
+            >
+              Update Stock
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    const totalCountEl = document.getElementById("ss-total-count");
+    const totalOnHandEl = document.getElementById("ss-total-onhand");
+    if (totalCountEl) totalCountEl.textContent = filtered.length;
+    if (totalOnHandEl) totalOnHandEl.textContent = totalOnHand;
+  }
+
+  // 2. Fallback table if used
+  if (fallbackTbody) {
+    fallbackTbody.innerHTML = filtered.map(p => `
+      <tr>
+        <td>
+          <strong>${p.name}</strong>
+          <br><small class="text-muted font-mono">[${p.code}]</small>
+        </td>
+        <td><strong>${p.unit_cost.toLocaleString()} Rs</strong></td>
+        <td><span class="font-mono font-bold">${p.on_hand}</span></td>
+        <td>
+          <span class="font-mono ${p.free_to_use <= 0 ? 'text-danger font-bold' : ''}">${p.free_to_use}</span>
+        </td>
+        <td class="text-right">
+          <button class="btn btn-outline btn-sm" onclick="openUpdateStockModal(${p.id}, '${p.name}', ${p.on_hand}, ${p.free_to_use})">
+            <i class="fa-solid fa-pen-to-square"></i> Update Stock
+          </button>
+        </td>
+      </tr>
+    `).join("");
+  }
 }
 
 function openUpdateStockModal(id, name, onHand, freeToUse) {
+  if (typeof id === 'string' && id.startsWith('prod-')) {
+    const cleanId = id.replace('prod-', '');
+    const prod = (window.currentProducts || []).find(p => p.id == cleanId);
+    if (prod) {
+      name = prod.name;
+      onHand = prod.on_hand;
+      freeToUse = prod.free_to_use;
+      id = prod.id;
+    }
+  }
   document.getElementById("update-stock-pid").value = id;
-  document.getElementById("update-stock-pname").value = name;
-  document.getElementById("update-stock-onhand").value = onHand;
-  document.getElementById("update-stock-freetouse").value = freeToUse;
+  document.getElementById("update-stock-pname").value = name || "";
+  document.getElementById("update-stock-onhand").value = onHand !== undefined ? onHand : 0;
+  document.getElementById("update-stock-freetouse").value = freeToUse !== undefined ? freeToUse : 0;
   openModal("modal-update-stock");
 }
 
 async function submitUpdateStock(e) {
   e.preventDefault();
-  const id = document.getElementById("update-stock-pid").value;
+  const rawId = document.getElementById("update-stock-pid").value;
+  const id = typeof rawId === 'string' ? rawId.replace('prod-', '') : rawId;
   const onHand = parseInt(document.getElementById("update-stock-onhand").value);
   const freeToUse = parseInt(document.getElementById("update-stock-freetouse").value);
 
@@ -355,6 +426,10 @@ async function submitUpdateStock(e) {
 function openAddProductModal() {
   document.getElementById("form-add-product").reset();
   openModal("modal-add-product");
+}
+
+function openNewProductModal() {
+  openAddProductModal();
 }
 
 async function submitAddProduct(e) {
