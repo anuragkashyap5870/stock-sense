@@ -311,44 +311,8 @@
         </div>
       </section>
 
-      <!-- 2. STOCK VIEW -->
-      <section id="view-stock" class="view-panel">
-        <div class="view-header">
-          <div>
-            <h1>Products & Current Stock</h1>
-            <p class="text-muted">Warehouse stock on hand, free to use, and direct inventory valuation</p>
-          </div>
-          <div class="view-actions">
-            <button class="btn btn-primary" onclick="openAddProductModal()"><i class="fa-solid fa-plus"></i> New Product</button>
-          </div>
-        </div>
-
-        <div class="card table-card">
-          <div class="table-toolbar">
-            <div class="search-box">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" id="stock-search-input" placeholder="Search product name or SKU..." oninput="filterStockTable()">
-            </div>
-          </div>
-
-          <div class="table-responsive">
-            <table class="data-table" id="stock-table">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Per Unit Cost</th>
-                  <th>On Hand</th>
-                  <th>Free to Use</th>
-                  <th class="text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody id="stock-table-body">
-                <!-- Loaded via JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+      <!-- 2. STOCK VIEW (Modular Component by Akash Sahani) -->
+      {% include 'components/stock.html' %}
 
       <!-- 3. RECEIPTS OPERATIONS VIEW -->
       <section id="view-receipts" class="view-panel">
